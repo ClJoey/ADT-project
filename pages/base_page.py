@@ -1,0 +1,85 @@
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException
+import os
+import time
+class BasePage:
+    LOADER = (By.CSS_SELECTOR, "table.dxlpLoadingPanel_XafTheme")
+
+    def __init__(self, driver):
+        self.driver = driver
+
+    def wait_and_type(self, locator, text, timeout=20):
+        element = WebDriverWait(self.driver, timeout).until(
+        EC.presence_of_element_located(locator)
+    )
+        element.clear()
+        element.send_keys(text)
+        
+    def wait_and_click(self, locator, retries=3):
+        for i in range(retries):
+            try:
+                element = WebDriverWait(self.driver, 20).until(
+                    EC.element_to_be_clickable(locator)
+                )
+                element.click()
+                return
+
+            except (ElementClickInterceptedException, StaleElementReferenceException):
+                time.sleep(1)
+
+        raise Exception(f"No se pudo hacer click en {locator}")
+
+    def wait_for_visible(self, locator, timeout=20):
+        return WebDriverWait(self.driver, timeout).until(
+            EC.visibility_of_element_located(locator)
+        )
+
+    def wait_loader(self, timeout=120):
+        def loader_oculto(driver):
+            try:
+                elementos = driver.find_elements(By.CSS_SELECTOR, "table.dxlpLoadingPanel_XafTheme")
+                if not elementos:
+                    return True  # no hay loader, seguimos
+                return all(
+                    "display: none" in (el.get_attribute("style") or "")
+                    for el in elementos
+                )
+            except StaleElementReferenceException:
+                return False  # relocaliza en el próximo poll
+        
+        WebDriverWait(self.driver, timeout).until(loader_oculto)
+    
+    def wait_for_file(self, download_path, timeout=60):
+        tiempo_inicio = time.time()
+
+        while time.time() - tiempo_inicio < timeout:
+            archivos = os.listdir(download_path)
+            # ignorar temporales
+            archivos_validos = [
+                f for f in archivos
+                if not f.endswith(".crdownload") and not f.endswith(".tmp")
+            ]
+            if archivos_validos:
+                ruta_completa = os.path.join(download_path, archivos_validos[0])
+
+                # validar que tenga tamaño > 0
+                if os.path.getsize(ruta_completa) > 0:
+                    return ruta_completa
+
+            time.sleep(2)
+
+        raise Exception("No se descargó el archivo correctamente")
+    
+    def _hubo_cambio(self, timeout=3):
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda d: any(
+                    el.is_displayed()
+                    for el in d.find_elements(By.CSS_SELECTOR, "table.dxlpLoadingPanel_XafTheme")
+                )
+            )
+            return True  # apareció loader → sí hubo acción
+        except:
+            return False  # no apareció nada → no pasó nada
