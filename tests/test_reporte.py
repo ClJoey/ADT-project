@@ -30,7 +30,7 @@ def test_reporte(driver, empresa):
     
 
     fisc = FiscPage(driver)
-
+    time.sleep(3)
     errores_empresa = []
 
     for reporte in empresa["reportes"]:

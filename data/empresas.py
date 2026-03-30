@@ -4,7 +4,7 @@ EMPRESAS = [
         "nombre": "Biometria Aplicada Spa",
         "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
         "filtro_cargo":False,
-        "Cargo": None
+        "Cargo": None,
     },
     {
         "rut": "96717980-9",
@@ -12,5 +12,5 @@ EMPRESAS = [
         "reportes": ["jor_diaria", "diario"],
         "filtro_cargo":False,
         "Cargo": None
-    }
+    },
 ]
