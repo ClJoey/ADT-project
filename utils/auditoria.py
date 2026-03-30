@@ -1,132 +1,128 @@
 import pandas as pd
 import re
 
-# CONVERSIÓN TIEMPO
-def tiempo_a_segundos(texto):
-    if pd.isna(texto) or str(texto).strip() == "" or "No Aplica" in str(texto):
+# CONVERSIÓN TIEMPO (Soporta objetos datetime y strings con signo)
+def tiempo_a_segundos(valor):
+    if pd.isna(valor) or str(valor).strip() == "" or "No Aplica" in str(valor):
         return 0
-    t = str(texto).replace(" ", "")
+    if hasattr(valor, 'hour'):
+        return valor.hour * 3600 + valor.minute * 60 + valor.second
+    
+    t = str(valor).strip().replace(" ", "").replace("+", "")
     try:
         signo = -1 if t.startswith("-") else 1
-        limpio = t.replace("+", "").replace("-", "")
+        limpio = t.replace("-", "")
         partes = limpio.split(':')
         return signo * (int(partes[0]) * 3600 + int(partes[1]) * 60 + int(partes[2]))
     except:
         return 0
 
-
-# RANGO COLACIÓN
-def calcular_duracion_rango(texto_rango):
-    if pd.isna(texto_rango) or "-" not in str(texto_rango):
+# RANGO COLACIÓN DINÁMICO (Soporta nocturnos y diferentes guiones)
+def calcular_duracion_colacion(rango_texto):
+    if pd.isna(rango_texto) or rango_texto == "No Aplica":
         return 0
     try:
-        partes = str(texto_rango).split("-")
-        inicio = tiempo_a_segundos(partes[0].strip())
-        fin = tiempo_a_segundos(partes[1].strip())
-        return abs(fin - inicio)
+        # Separa por cualquier tipo de guion
+        partes = re.split(r'[-–—]', str(rango_texto).replace(" ", ""))
+        if len(partes) == 2:
+            inicio = tiempo_a_segundos(partes[0])
+            fin = tiempo_a_segundos(partes[1])
+            if inicio != 0 or fin != 0:
+                return (fin - inicio + 86400) % 86400
+        return 0
     except:
         return 0
 
-
-# FORMATO TEXTO
+# FORMATO TEXTO PARA ERRORES
 def segundos_a_texto(segundos):
     signo = "-" if segundos < 0 else "+"
     abs_seg = abs(segundos)
     h, m = divmod(abs_seg, 3600)
     m, s = divmod(m, 60)
-    return f"{signo} {int(h):02d}:{int(m):02d}:{int(s):02d}"
+    return f"{signo}{int(h):02d}:{int(m):02d}:{int(s):02d}"
 
-
-# FUNCIÓN CLAVE (maneja turnos nocturnos)
+# FUNCIÓN DURACIÓN (Cruces de medianoche)
 def calcular_duracion(inicio, fin):
-    if fin < inicio:
-        return (fin + 86400) - inicio
-    return fin - inicio
+    return (fin - inicio + 86400) % 86400
 
-
-# AUDITORÍA PRINCIPAL
+# AUDITORÍA PRINCIPAL (Limitada a 2 primeros colaboradores)
 def auditar_excel_final(ruta_excel):
-
-    df = pd.read_excel(ruta_excel, header=None)
+    try:
+        df = pd.read_excel(ruta_excel, header=None)
+    except Exception as e:
+        return False, [f"Error al abrir archivo: {e}"]
 
     errores = []
-
-    suma_pactada = 0
-    suma_real = 0
-    suma_faltante = 0
-    suma_extra = 0
+    colaboradores_contados = 0
+    nombre_actual = ""
+    
+    # Acumuladores semanales
+    s_pactada, s_real, s_faltante, s_extra = 0, 0, 0, 0
 
     for i, fila in df.iterrows():
+        # Identificar Colaborador
+        if "Nombre:" in str(fila.values):
+            colaboradores_contados += 1
+            if colaboradores_contados > 2:
+                break
+            nombre_actual = str(fila[10]) if not pd.isna(fila[10]) else "Desconocido"
 
         fecha_str = str(fila[0])
 
-        # FILAS DIARIAS
+        # --- FILAS DIARIAS ---
         if re.match(r'\d{2}/\d{2}/\d{2}', fecha_str):
+            colacion = calcular_duracion_colacion(fila[6])
 
-            colacion = calcular_duracion_rango(fila[6])
-
-            # --- PACTADA ---
+            # 1. PACTADA (Solo si existen ambas marcas)
             p_in = tiempo_a_segundos(fila[1])
             p_out = tiempo_a_segundos(fila[2])
+            if p_in != 0 and p_out != 0:
+                s_pactada += (calcular_duracion(p_in, p_out) - colacion)
 
-            if p_in > 0 and p_out > 0:
-                pactada = calcular_duracion(p_in, p_out) - colacion
-            else:
-                pactada = 0
-
-            suma_pactada += pactada
-
-            # --- REAL ---
+            # 2. REAL (Solo si existen ambas marcas)
             r_in = tiempo_a_segundos(fila[3])
             r_out = tiempo_a_segundos(fila[5])
+            if r_in != 0 and r_out != 0:
+                s_real += (calcular_duracion(r_in, r_out) - colacion)
 
-            if r_in > 0 and r_out > 0:
-                real = calcular_duracion(r_in, r_out) - colacion
-            else:
-                real = 0
+            # 3. EXTRAS Y FALTANTES
+            s_faltante += tiempo_a_segundos(fila[9])
+            s_extra += tiempo_a_segundos(fila[11])
 
-            suma_real += real
+        # --- TOTAL SEMANAL ---
+        elif "Total Semanal" in fecha_str:
+            t_pact_ex = tiempo_a_segundos(fila[1])
+            t_real_ex = tiempo_a_segundos(fila[3])
+            t_bal_ex = tiempo_a_segundos(fila[9])
 
-            # --- FALTANTE / EXTRA ---
-            faltante = tiempo_a_segundos(fila[9])
-            extra = tiempo_a_segundos(fila[11])
+            t_bal_calc = s_extra + s_faltante
 
-            suma_faltante += faltante
-            suma_extra += extra
+            # Tolerancia de 10 segundos por redondeos de Excel
+            id_info = f"Fila {i+1} ({nombre_actual})"
 
-        # TOTAL SEMANAL (solo los válidos)
-        if "Total Semanal" in fecha_str and str(fila[1]).strip() != "00:00:00":
+            if abs(s_pactada - t_pact_ex) > 10:
+                errores.append(f"{id_info} | PACTADA ERROR | Esp: {segundos_a_texto(s_pactada)} | Ex: {segundos_a_texto(t_pact_ex)}")
 
-            # COLUMNAS CORRECTAS
-            total_pactada_excel = tiempo_a_segundos(fila[1])
-            total_real_excel = tiempo_a_segundos(fila[3])
-            total_balance_excel = tiempo_a_segundos(fila[9])
+            if abs(s_real - t_real_ex) > 10:
+                errores.append(f"{id_info} | REAL ERROR | Esp: {segundos_a_texto(s_real)} | Ex: {segundos_a_texto(t_real_ex)}")
 
-            total_balance_calculado = suma_faltante + suma_extra
+            if abs(t_bal_calc - t_bal_ex) > 10:
+                errores.append(f"{id_info} | BALANCE ERROR | Esp: {segundos_a_texto(t_bal_calc)} | Ex: {segundos_a_texto(t_bal_ex)}")
 
-            # VALIDACIONES
-            if abs(suma_pactada - total_pactada_excel) > 120:
-                errores.append(
-                    f"PACTADA ERROR | Esperado: {segundos_a_texto(suma_pactada)} | Excel: {segundos_a_texto(total_pactada_excel)}"
-                )
-
-            if abs(suma_real - total_real_excel) > 120:
-                errores.append(
-                    f"REAL ERROR | Esperado: {segundos_a_texto(suma_real)} | Excel: {segundos_a_texto(total_real_excel)}"
-                )
-
-            if abs(total_balance_calculado - total_balance_excel) > 120:
-                errores.append(
-                    f"BALANCE ERROR | Esperado: {segundos_a_texto(total_balance_calculado)} | Excel: {segundos_a_texto(total_balance_excel)}"
-                )
-
-            # RESET
-            suma_pactada = 0
-            suma_real = 0
-            suma_faltante = 0
-            suma_extra = 0
+            # RESET SEMANAL OBLIGATORIO
+            s_pactada, s_real, s_faltante, s_extra = 0, 0, 0, 0
 
     if errores:
         return False, errores
-
     return True, []
+
+# Ejemplo de uso
+AUDITAR = r"C:\Users\PrDes\Desktop\Prueba_pdf\Reporte de jornada diaria ENAP.xlsx"
+resultado, lista_errores = auditar_excel_final(AUDITAR)
+
+if resultado:
+    print("Auditoría exitosa: No hay errores en los 2 primeros colaboradores.")
+else:
+    print("Errores encontrados:")
+    for err in lista_errores:
+        print(err)
