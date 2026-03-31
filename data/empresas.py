@@ -1,10 +1,24 @@
 EMPRESAS = [
     {
+        "rut": "79777010-8",
+        "nombre": "ALTERNATTIVA (MARKETING Y PROMOCIONES S.A.)",
+        "reportes": ["jor_diaria", "diario"],
+        "filtro_cargo":True,
+        "Cargo": "Mercaderista Planta"
+    },
+    {
         "rut": "76257834-4",
         "nombre": "Biometria Aplicada Spa",
         "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
         "filtro_cargo":False,
         "Cargo": None
+    },
+    {
+        "rut": "77128770-0",
+        "nombre": "CYGNUS (Alvarez Recursos Humanos Limitada)",
+        "reportes": ["jor_diaria", "diario"],
+        "filtro_cargo":True,
+        "Cargo": "Mercaderista Planta"
     },
     {
         "rut": "92604000-6",

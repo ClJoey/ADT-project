@@ -116,10 +116,25 @@ class FiscPage(BasePage):
         self.wait_and_click(self.BTN_CARGO)
         self.wait_loader()
         time.sleep(2)
-        cargo = (By.XPATH, f"//td[contains(text(), '{cargo}')]")
-        time.sleep(2)
-        self.wait_and_click(cargo)
+        # Entrar al iframe del popup de cargos
+        iframe = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "iframe[id*='PopupWindow'][id*='CIF']"))
+        )
+        self.driver.switch_to.frame(iframe)
+        print("        [DEBUG] Dentro del iframe")
+
+        # Click directo en el cargo
+        cargo_locator = (By.XPATH, f"//td[contains(text(),'{cargo}')]")
+        cargo_el = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(cargo_locator)
+        )
+        print(f"        [DEBUG] Cargo encontrado: {cargo_el.text}")
+        self.driver.execute_script("arguments[0].click();", cargo_el)
+
+        # Volver al contexto principal
+        self.driver.switch_to.default_content()
         self.wait_loader()
+        time.sleep(2)
 
     def reporte_tiene_datos(self, timeout=30):
         try:
