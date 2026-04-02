@@ -13,8 +13,13 @@ def generar_html(resultados_empresa):
     bloques = ""
 
     for r in reportes:
-        color = "#28a745" if r["estado"] == "OK" else "#dc3545"
-        badge = "OK" if r["estado"] == "OK" else "FAIL"
+        if r["estado"] == "OK":
+            color = "#28a745"
+        elif r["estado"] == "FAIL":
+            color = "#dc3545"
+        else:
+            color = "#ffc107"  # amarillo
+        badge = r["estado"]
 
         errores_html = "".join(
             f"<li>{e}</li>" for e in r["errores"]

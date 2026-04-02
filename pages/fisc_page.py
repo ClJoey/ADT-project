@@ -29,7 +29,7 @@ class FiscPage(BasePage):
     REPORTE_BTN = (By.ID, "Vertical_mainMenu_Menu_DXI0_T")
     DOWN_EXCEL = (By.CSS_SELECTOR, "a[id*='dviDescargarEXCEL_View_HA']")
     BTN_CARGO = (By.CSS_SELECTOR, "a[id*='dviCargosBinding_ObjectsCreation_Menu_DXI0_T']")
-
+    ALERTA_SIN_DATOS = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
 
     # 1. Seleccionar reporte dinámico
     def seleccionar_reporte(self, nombre_reporte):
@@ -90,6 +90,8 @@ class FiscPage(BasePage):
         self.wait_loader()
         return True  # éxito
 
+    
+
 
     # 3. Descargar Excel
     def descargar_excel(self, download_path):
@@ -142,6 +144,15 @@ class FiscPage(BasePage):
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located(self.DOWN_EXCEL)
+            )
+            return True
+        except:
+            return False
+    
+    def hay_sin_datos(self, timeout=5):
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(self.ALERTA_SIN_DATOS)
             )
             return True
         except:

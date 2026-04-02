@@ -57,6 +57,23 @@ def test_reporte(driver, empresa):
             # NUEVO: validar generación
             ok_reporte = fisc.generar_reporte()
 
+            if fisc.hay_sin_datos():
+                print(f"    {reporte} sin datos")
+
+                estado = "NO_DATA"
+                errores_lista.append("No hay trabajadores para este reporte")
+                time.sleep(1)
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
+
+                resultados_empresa["reportes"].append({
+                    "nombre": reporte,
+                    "estado": estado,
+                    "errores": errores_lista,
+                    "captura": captura
+                })
+                time.sleep(4)  # esperar que aparezca alerta y evitar solapamiento de capturas
+                continue
+
             if not ok_reporte:
                 print(f"    ✗ No apareció botón generar reporte")
 
