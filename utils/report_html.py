@@ -1,8 +1,8 @@
 import os
-import base64 # <--- Añadido
+import base64
 from datetime import datetime
 
-# Función nueva para convertir la imagen a texto
+# Función para convertir la imagen a texto (Base64)
 def imagen_a_base64(ruta_imagen):
     try:
         if not ruta_imagen or not os.path.exists(ruta_imagen):
@@ -37,13 +37,12 @@ def generar_html(resultados_empresa):
             f"<li>{e}</li>" for e in r["errores"]
         ) if r["errores"] else "<li>Sin errores</li>"
 
-        # --- LÓGICA BASE64 ---
+        # LÓGICA BASE64
         img_data = imagen_a_base64(r["captura"])
         if img_data:
             img_tag = f'<img src="data:image/png;base64,{img_data}" class="screenshot">'
         else:
-            img_tag = '<p style="color:gray;">Captura no disponible</p>'
-        # ---------------------
+            img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc;">Captura no disponible</p>'
 
         bloques += f"""
         <div class="card">
@@ -67,16 +66,24 @@ def generar_html(resultados_empresa):
         <meta charset="UTF-8">
         <title>Reporte - {empresa}</title>
         <style>
+            /* CONFIGURACIÓN PARA PDF */
+            @media print {{
+                body {{ background: white; }}
+                .container {{ width: 100%; }}
+            }}
+            
             body {{
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background: #f5f7fa;
                 margin: 0;
                 padding: 20px;
                 color: #333;
+                /* 🏁 SALTO DE PÁGINA: Obliga a que cada archivo empiece en hoja nueva al unir PDFs */
+                page-break-after: always;
             }}
 
             .container {{
-                max-width: 1200px;
+                max-width: 1100px;
                 margin: auto;
             }}
 
@@ -88,6 +95,8 @@ def generar_html(resultados_empresa):
                 border-radius: 10px;
                 margin-bottom: 25px;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                /* Evita que el encabezado se corte entre dos páginas */
+                page-break-inside: avoid;
             }}
 
             .summary {{
@@ -113,6 +122,8 @@ def generar_html(resultados_empresa):
                 border-radius: 12px;
                 box-shadow: 0 3px 12px rgba(0,0,0,0.06);
                 overflow: hidden;
+                /* 🚫 EVITA CORTES: No deja que una tarjeta se parta a la mitad entre hojas */
+                page-break-inside: avoid;
             }}
 
             .card-header {{
@@ -155,7 +166,6 @@ def generar_html(resultados_empresa):
 
     <body>
         <div class="container">
-
             <div class="header">
                 <h1>Informe de Auditoría Automática</h1>
                 <p><b>Empresa:</b> {empresa}</p>
@@ -170,7 +180,6 @@ def generar_html(resultados_empresa):
             </div>
 
             {bloques}
-
         </div>
     </body>
     </html>
