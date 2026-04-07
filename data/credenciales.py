@@ -1,4 +1,4 @@
 USER = [{
     "usuario": "nicolas.perez@baplicada.cl",
-    "password": "sBVmjQEc"
+    "password": "+W9q6cni"
 }]

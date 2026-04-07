@@ -1,0 +1,40 @@
+name: Selenium Tests
+
+on:
+  push:
+    branches: [ "main", "experimental" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: Instalar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Instalar dependencias
+      run: |
+        pip install -r requirements.txt
+
+    - name: Instalar Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Ejecutar tests
+      run: pytest tests/test_reporte.py -s
+
+    # ESTO VA AL FINAL (MUY IMPORTANTE)
+    - name: Subir reportes
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: reportes
+        path: |
+          reports/
+          screenshots/
+          downloads/
