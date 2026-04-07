@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import os
 
 # CONVERSIÓN TIEMPO (Soporta objetos datetime y strings con signo)
 def tiempo_a_segundos(valor):
@@ -48,7 +49,9 @@ def calcular_duracion(inicio, fin):
 # AUDITORÍA PRINCIPAL (Limitada a 2 primeros colaboradores)
 def auditar_excel_final(ruta_excel):
     try:
-        df = pd.read_excel(ruta_excel, header=None)
+        # Aseguramos que la ruta sea válida para el sistema operativo actual
+        ruta_ajustada = os.path.abspath(ruta_excel)
+        df = pd.read_excel(ruta_ajustada, header=None)
     except Exception as e:
         return False, [f"Error al abrir archivo: {e}"]
 
@@ -65,6 +68,7 @@ def auditar_excel_final(ruta_excel):
             colaboradores_contados += 1
             if colaboradores_contados > 2:
                 break
+            # El nombre suele estar en la columna 10 según tu lógica
             nombre_actual = str(fila[10]) if not pd.isna(fila[10]) else "Desconocido"
 
         fecha_str = str(fila[0])
@@ -73,13 +77,13 @@ def auditar_excel_final(ruta_excel):
         if re.match(r'\d{2}/\d{2}/\d{2}', fecha_str):
             colacion = calcular_duracion_colacion(fila[6])
 
-            # 1. PACTADA (Solo si existen ambas marcas)
+            # 1. PACTADA
             p_in = tiempo_a_segundos(fila[1])
             p_out = tiempo_a_segundos(fila[2])
             if p_in != 0 and p_out != 0:
                 s_pactada += (calcular_duracion(p_in, p_out) - colacion)
 
-            # 2. REAL (Solo si existen ambas marcas)
+            # 2. REAL
             r_in = tiempo_a_segundos(fila[3])
             r_out = tiempo_a_segundos(fila[5])
             if r_in != 0 and r_out != 0:
@@ -96,8 +100,6 @@ def auditar_excel_final(ruta_excel):
             t_bal_ex = tiempo_a_segundos(fila[9])
 
             t_bal_calc = s_extra + s_faltante
-
-            # Tolerancia de 10 segundos por redondeos de Excel
             id_info = f"Fila {i+1} ({nombre_actual})"
 
             if abs(s_pactada - t_pact_ex) > 10:
@@ -109,20 +111,28 @@ def auditar_excel_final(ruta_excel):
             if abs(t_bal_calc - t_bal_ex) > 10:
                 errores.append(f"{id_info} | BALANCE ERROR | Esp: {segundos_a_texto(t_bal_calc)} | Ex: {segundos_a_texto(t_bal_ex)}")
 
-            # RESET SEMANAL OBLIGATORIO
+            # RESET SEMANAL
             s_pactada, s_real, s_faltante, s_extra = 0, 0, 0, 0
 
     if errores:
         return False, errores
     return True, []
 
-# Ejemplo de uso
-AUDITAR = r"C:\Users\PrDes\Desktop\Prueba_pdf\Reporte de jornada diaria ENAP.xlsx"
-resultado, lista_errores = auditar_excel_final(AUDITAR)
+# --- BLOQUE DE PRUEBA LOCAL ---
+# Este bloque SOLO se ejecuta si corres este archivo directamente.
+# Cuando pytest lo importa para el test real, este bloque SE IGNORA.
+if __name__ == "__main__":
+    # Usamos una ruta relativa que funcione en cualquier carpeta
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Suponiendo que tienes un archivo de prueba en una carpeta 'data'
+    ARCHIVO_PRUEBA = os.path.join(BASE_DIR, "..", "downloads", "Reporte de jornada diaria ENAP.xlsx")
+    
+    print(f"Probando auditoría con: {ARCHIVO_PRUEBA}")
+    resultado, lista_errores = auditar_excel_final(ARCHIVO_PRUEBA)
 
-if resultado:
-    print("Auditoría exitosa: No hay errores en los 2 primeros colaboradores.")
-else:
-    print("Errores encontrados:")
-    for err in lista_errores:
-        print(err)
+    if resultado:
+        print("Auditoría exitosa.")
+    else:
+        print("Errores encontrados:")
+        for err in lista_errores:
+            print(err)

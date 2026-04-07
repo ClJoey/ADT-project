@@ -11,12 +11,18 @@ from utils.auditoria import auditar_excel_final
 import time
 from utils.screenshots import guardar_captura
 from utils.report_html import generar_html
+import os
 
 
 @pytest.mark.parametrize("empresa", EMPRESAS, ids=[e["nombre"] for e in EMPRESAS])
 def test_reporte(driver, empresa):
-
-    download_path = "C:\\Users\\PrDes\\Desktop\\ADT_TEST\\downloads"
+    # ✅ Esto busca la carpeta 'downloads' en la raíz del proyecto
+    download_path = os.path.abspath("downloads") 
+    
+    # Asegurarnos de que la carpeta existe antes de limpiar
+    if not os.path.exists(download_path):
+        os.makedirs(download_path)
+        
     limpiar_descargas(download_path)
 
     # LOGIN
