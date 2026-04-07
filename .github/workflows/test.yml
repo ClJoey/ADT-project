@@ -2,9 +2,10 @@ name: Selenium Tests
 
 on:
   push:
-    branches: [ "ci-cd-tests" ]
+    branches: [ "ci-cd-tests", "feature-pdf-email" ] # Agregué tu rama nueva aquí
   pull_request:
     branches: [ "ci-cd-tests" ]
+  workflow_dispatch: # 👈 ¡ESTA LÍNEA ACTIVA EL BOTÓN "RUN WORKFLOW"!
 
 jobs:
   test:
@@ -18,12 +19,17 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-        cache: 'pip' # Esto hace que las siguientes veces instale más rápido
+        cache: 'pip'
 
     - name: Instalar dependencias
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+
+    - name: Instalar wkhtmltopdf (Motor para el PDF)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wkhtmltopdf
 
     - name: Instalar Chrome
       uses: browser-actions/setup-chrome@v1
@@ -31,26 +37,8 @@ jobs:
         chrome-version: stable
 
     - name: Ejecutar tests
-      # Agregamos env: CI: true para que tu conftest.py lo detecte correctamente
       env:
         CI: "true"
-      run: pytest tests/test_reporte.py -s
-
-    - name: Subir reportes
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: reportes-ejecucion
-        path: |
-          reports/
-          screenshots/
-          downloads/
-    - name: Instalar wkhtmltopdf (Linux)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y wkhtmltopdf
-
-    - name: Ejecutar Tests
       run: pytest tests/test_reporte.py -s
 
     - name: Generar PDF Consolidado
@@ -61,9 +49,18 @@ jobs:
       if: always()
       run: python utils/zipper.py
 
-    - name: Subir Reporte Final (Artefactos)
+    - name: Subir Reporte Final (ZIP)
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: Paquete-Auditoria-Final
-        path: "*.zip" # Sube cualquier archivo ZIP que encuentre en la raíz
+        path: "*.zip" 
+
+    - name: Subir evidencias sueltas (Opcional)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: evidencias-tecnicas
+        path: |
+          reports/
+          screenshots/
