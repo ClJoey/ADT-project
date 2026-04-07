@@ -4,3 +4,5 @@ webdriver-manager
 pandas
 openpyxl
 pytest-html
+pdfkit
+PyPDF2
