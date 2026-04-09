@@ -5,7 +5,7 @@ on:
     branches: [ "ci-cd-tests", "feature-pdf-email" ] # Agregué tu rama nueva aquí
   pull_request:
     branches: [ "ci-cd-tests" ]
-  workflow_dispatch: # 👈 ¡ESTA LÍNEA ACTIVA EL BOTÓN "RUN WORKFLOW"!
+  workflow_dispatch: #¡ESTA LÍNEA ACTIVA EL BOTÓN "RUN WORKFLOW"!
 
 jobs:
   test:
