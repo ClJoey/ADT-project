@@ -16,7 +16,7 @@ import os
 
 @pytest.mark.parametrize("empresa", EMPRESAS, ids=[e["nombre"] for e in EMPRESAS])
 def test_reporte(driver, empresa):
-    # ✅ Esto busca la carpeta 'downloads' en la raíz del proyecto
+    # Esto busca la carpeta 'downloads' en la raíz del proyecto
     download_path = os.path.abspath("downloads") 
     
     # Asegurarnos de que la carpeta existe antes de limpiar
@@ -51,7 +51,10 @@ def test_reporte(driver, empresa):
         estado = "OK"
         errores_lista = []
 
-        print(f"\n>>> Iniciando reporte: {reporte}")
+        # OBTENER NOMBRE FORMAL DESDE FISC_PAGE
+        nombre_formal = fisc.REPORTE_URLS.get(reporte, reporte)
+
+        print(f"\n>>> Iniciando reporte: {nombre_formal}")
 
         try:
             fisc.seleccionar_reporte(reporte)
@@ -60,11 +63,10 @@ def test_reporte(driver, empresa):
                 fisc.seleccionar_cargo(empresa["Cargo"])
                 print(f"    ✓ Cargo filtrado: {empresa['Cargo']}")
 
-            # NUEVO: validar generación
             ok_reporte = fisc.generar_reporte()
 
             if fisc.hay_sin_datos():
-                print(f"    {reporte} sin datos")
+                print(f"    {nombre_formal} sin datos")
 
                 estado = "NO_DATA"
                 errores_lista.append("No hay trabajadores para este reporte")
@@ -72,7 +74,7 @@ def test_reporte(driver, empresa):
                 captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
 
                 resultados_empresa["reportes"].append({
-                    "nombre": reporte,
+                    "nombre": nombre_formal,
                     "estado": estado,
                     "errores": errores_lista,
                     "captura": captura
@@ -85,12 +87,12 @@ def test_reporte(driver, empresa):
 
                 estado = "FAIL"
                 errores_lista.append("Botón Generar Reporte no apareció")
-                errores_empresa.append(f"{reporte}: no se pudo generar reporte")
+                errores_empresa.append(f"{nombre_formal}: no se pudo generar reporte")
 
                 captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
 
                 resultados_empresa["reportes"].append({
-                    "nombre": reporte,
+                    "nombre": nombre_formal,
                     "estado": estado,
                     "errores": errores_lista,
                     "captura": captura
@@ -104,14 +106,14 @@ def test_reporte(driver, empresa):
             time.sleep(3)
 
             if not fisc.reporte_tiene_datos():
-                print(f"    ✗ Reporte {reporte} no cargó")
+                print(f"    ✗ Reporte {nombre_formal} no cargó")
 
                 estado = "FAIL"
                 errores_lista.append("No cargó el reporte")
-                errores_empresa.append(f"{reporte}: no cargó")
+                errores_empresa.append(f"{nombre_formal}: no cargó")
 
             else:
-                print(f"    ✓ Reporte generado: {reporte}")
+                print(f"    ✓ Reporte generado: {nombre_formal}")
 
                 if reporte == "jor_diaria":
                     archivo = fisc.descargar_excel(download_path)
@@ -121,7 +123,7 @@ def test_reporte(driver, empresa):
 
                         estado = "FAIL"
                         errores_lista.append("No se descargó archivo")
-                        errores_empresa.append(f"{reporte}: No se descargó archivo")
+                        errores_empresa.append(f"{nombre_formal}: No se descargó archivo")
 
                     else:
                         print(f"    ✓ Archivo descargado: {archivo}")
@@ -135,20 +137,20 @@ def test_reporte(driver, empresa):
 
                             estado = "FAIL"
                             errores_lista = errores
-                            errores_empresa.append(f"{reporte}: {errores}")
+                            errores_empresa.append(f"{nombre_formal}: {errores}")
 
         except Exception as e:
-            print(f"Error inesperado en {reporte}: {e}")
+            print(f"Error inesperado en {nombre_formal}: {e}")
 
             estado = "FAIL"
             errores_lista.append(str(e))
-            errores_empresa.append(f"{reporte}: {e}")
+            errores_empresa.append(f"{nombre_formal}: {e}")
 
             captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
 
         # SIEMPRE guardar resultado
         resultados_empresa["reportes"].append({
-            "nombre": reporte,
+            "nombre": nombre_formal,
             "estado": estado,
             "errores": errores_lista,
             "captura": captura

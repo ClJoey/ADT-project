@@ -8,13 +8,13 @@ class FiscPage(BasePage):
 
     LIST_DT = (By.ID, "Vertical_NC_NB_GC0")
 
-    REPORTE_URLS = {
-    "asistencia":     "ReporteAsistencia",
-    "jor_diaria":     "ReporteJornada",
-    "domingos":       "ReporteDomingo",
-    "modificaciones": "ReporteJornada",
-    "diario":         "ReporteDiario",
-    "incidentes":     "ReporteDiario",
+    REPORTE_NOMBRES_FORMALES = {
+    "asistencia":     "Reporte de Asistencia",
+    "jor_diaria":     "Reporte de Jornada Diaria",
+    "domingos":       "Reporte de días domingo y/o días festivos",
+    "modificaciones": "Reporte de modificaciones y/o alteraciones de turnos",
+    "diario":         "Reporte Diario",
+    "incidentes":     "Reporte de Incidentes Técnicos",
 }
 
     REPORTES = {
