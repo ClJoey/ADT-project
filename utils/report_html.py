@@ -32,11 +32,14 @@ def generar_html(resultados_empresa):
         else:
             color_resumen = "#ffc107" # Para NO_DATA
 
-        # El href="#reporte_{i}" es el que hace la magia del salto
+        # 🚩 CAMBIO PARA EL ERROR: Usamos un ID que incluya el RUT para que sea único en todo el PDF
+        id_vinculo = f"reporte_{rut}_{i}"
+
+        # El href="#{id_vinculo}" ahora es único por empresa
         filas_resumen += f"""
         <tr>
             <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                <a href="#reporte_{i}" style="text-decoration: none; color: #007bff; font-weight: bold;">
+                <a href="#{id_vinculo}" style="text-decoration: none; color: #007bff; font-weight: bold;">
                     {r["nombre"]}
                 </a>
             </td>
@@ -89,9 +92,15 @@ def generar_html(resultados_empresa):
         else:
             img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc;">Captura no disponible</p>'
 
-        # Agregamos id="reporte_{i}" para que el vínculo del índice funcione
+        # 🚩 CAMBIO PARA EL ERROR: El ID debe coincidir con el del índice arriba
+        id_vinculo = f"reporte_{rut}_{i}"
+        
+        # 🚩 CAMBIO PARA LA HOJA APARTE: El primer reporte (i=0) fuerza un salto de página antes de empezar
+        estilo_salto = "page-break-before: always;" if i == 0 else ""
+
+        # Agregamos id="{id_vinculo}" para que el vínculo del índice funcione
         bloques += f"""
-        <div class="card" id="reporte_{i}">
+        <div class="card" id="{id_vinculo}" style="{estilo_salto}">
             <div class="card-header">
                 <h2 style="margin:0;">{r["nombre"]}</h2>
                 <span class="badge" style="background:{color}">{badge}</span>
@@ -143,7 +152,7 @@ def generar_html(resultados_empresa):
                 border-radius: 12px;
                 box-shadow: 0 3px 12px rgba(0,0,0,0.06);
                 overflow: hidden;
-                page-break-inside: avoid; /* Para que el reporte no se corte a la mitad en PDF */
+                page-break-inside: avoid;
             }}
             .card-header {{
                 display: flex;
