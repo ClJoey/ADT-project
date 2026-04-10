@@ -21,7 +21,7 @@ def generar_html(resultados_empresa):
     ok_count = sum(1 for r in reportes if r["estado"] == "OK")
     fail_count = total - ok_count
 
-    # 🚀 1. GENERAR LA VISTA DE PÁJARO (Solo tabla informativa, sin enlaces)
+    # 🚀 1. GENERAR LA VISTA DE PÁJARO (Tabla de Resumen)
     filas_resumen = ""
     for i, r in enumerate(reportes):
         if r["estado"] == "OK":
@@ -46,7 +46,7 @@ def generar_html(resultados_empresa):
         """
 
     resumen_tabla_html = f"""
-    <div class="header" style="margin-top: 20px; page-break-after: auto;">
+    <div class="header" style="margin-top: 20px;">
         <h2 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Índice de Reportes (Resumen)</h2>
         <table style="width: 100%; border-collapse: collapse; background: white;">
             <thead>
@@ -85,8 +85,8 @@ def generar_html(resultados_empresa):
         else:
             img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc;">Captura no disponible</p>'
 
-        # Mantenemos el salto de página para que el primer reporte (i=0) se vaya a la hoja 2
-        estilo_salto = "page-break-before: always;" if i == 0 else ""
+        # 🚩 CORRECCIÓN: Quitamos el 'if i == 0'. Ahora TODOS los reportes inician en hoja nueva.
+        estilo_salto = "page-break-before: always;"
 
         bloques += f"""
         <div class="card" style="{estilo_salto}">
@@ -117,8 +117,14 @@ def generar_html(resultados_empresa):
                 margin: 0;
                 padding: 20px;
                 color: #333;
+                /* 🚩 CORRECCIÓN: Aseguramos que el body NO dispare hojas en blanco al final */
+                page-break-after: avoid; 
             }}
-            .container {{ max-width: 1100px; margin: auto; }}
+            .container {{ 
+                max-width: 1100px; 
+                margin: auto;
+                page-break-after: avoid;
+            }}
             .header {{
                 background: white;
                 padding: 25px;
@@ -138,6 +144,7 @@ def generar_html(resultados_empresa):
                 border-radius: 12px;
                 box-shadow: 0 3px 12px rgba(0,0,0,0.06);
                 overflow: hidden;
+                /* Evitamos que una tarjeta se parta en dos hojas */
                 page-break-inside: avoid;
             }}
             .card-header {{
