@@ -7,7 +7,7 @@ def enviar_reporte():
     # 1. Obtener credenciales desde GitHub Secrets
     remitente = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
-    destinatarios = ["joseph.cervantes@inacapmail.cl"] 
+    destinatarios = ["joseph.cervantes@iplusd.cl"] 
 
     if not remitente or not password:
         print(" Error: Faltan EMAIL_USER o EMAIL_PASS en los Secretos de GitHub.")
