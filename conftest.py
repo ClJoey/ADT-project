@@ -37,7 +37,11 @@ def driver():
         "download.directory_upgrade": True,
         "safebrowsing.enabled": True,
         # Forzar a que no abra el visor de PDF interno y lo descargue
-        "plugins.always_open_pdf_externally": True 
+        "plugins.always_open_pdf_externally": True,
+        "profile.default_content_settings.popups": 0,
+        "profile.default_content_setting_values.automatic_downloads": 1,
+        "download.extensions_to_open": "applications/pdf",
+        "safebrowsing.disable_download_protection": True,
     }
     options.add_experimental_option("prefs", prefs)
 
