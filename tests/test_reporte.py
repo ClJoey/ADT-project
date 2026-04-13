@@ -6,6 +6,7 @@ from data.credenciales import USER
 from pages.login_page import LoginPage
 from pages.init_page import InitPage
 from pages.fisc_page import FiscPage
+from pages.base_page import LoaderTimeoutError
 from utils.helpers import limpiar_descargas
 from utils.auditoria import auditar_excel_final
 import time
@@ -47,9 +48,12 @@ def test_reporte(driver, empresa):
         "reportes": []
     }
 
+    loader_timeout = False
+
     for reporte in empresa["reportes"]:
         estado = "OK"
         errores_lista = []
+        captura = None
 
         # 🚀 CORRECCIÓN: Usamos REPORTE_NOMBRES_FORMALES que es el que está en FiscPage
         nombre_formal = fisc.REPORTE_NOMBRES_FORMALES.get(reporte, reporte)
@@ -139,6 +143,16 @@ def test_reporte(driver, empresa):
                             errores_lista = errores
                             errores_empresa.append(f"{nombre_formal}: {errores}")
 
+        except LoaderTimeoutError as e:
+            print(f"    ✗ Tiempo de carga excedido en {nombre_formal}: {e}")
+
+            estado = "FAIL"
+            errores_lista.append("Interrumpido por tiempo de carga excedido")
+            errores_empresa.append(f"{nombre_formal}: Interrumpido por tiempo de carga excedido")
+
+            captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_timeout")
+            loader_timeout = True
+
         except Exception as e:
             print(f"Error inesperado en {nombre_formal}: {e}")
 
@@ -155,6 +169,10 @@ def test_reporte(driver, empresa):
             "errores": errores_lista,
             "captura": captura
         })
+
+        if loader_timeout:
+            print(f"    ✗ Deteniendo empresa '{empresa['nombre']}' por tiempo de carga excedido")
+            break
 
     # SIEMPRE generar HTML
     ruta_html = generar_html(resultados_empresa)

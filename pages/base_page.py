@@ -1,9 +1,16 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException
+from selenium.common.exceptions import ElementClickInterceptedException, StaleElementReferenceException, TimeoutException
 import os
 import time
+
+
+class LoaderTimeoutError(Exception):
+    """Se lanza cuando el loader no desaparece dentro del tiempo permitido."""
+    pass
+
+
 class BasePage:
     LOADER = (By.CSS_SELECTOR, "table.dxlpLoadingPanel_XafTheme")
 
@@ -36,7 +43,7 @@ class BasePage:
             EC.visibility_of_element_located(locator)
         )
 
-    def wait_loader(self, timeout=240):
+    def wait_loader(self, timeout=10):
         def loader_oculto(driver):
             try:
                 elementos = driver.find_elements(By.CSS_SELECTOR, "table.dxlpLoadingPanel_XafTheme")
@@ -48,7 +55,12 @@ class BasePage:
                 )
             except StaleElementReferenceException:
                 return False
-        WebDriverWait(self.driver, timeout).until(loader_oculto)
+        try:
+            WebDriverWait(self.driver, timeout).until(loader_oculto)
+        except TimeoutException:
+            raise LoaderTimeoutError(
+                f"Interrumpido por tiempo de carga excedido ({timeout}s)"
+            )
     
     def wait_for_file(self, download_path, timeout=60):
         tiempo_inicio = time.time()
