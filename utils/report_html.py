@@ -82,6 +82,8 @@ def generar_html(resultados_empresa):
         img_data = imagen_a_base64(r["captura"])
         if img_data:
             img_tag = f'<img src="data:image/png;base64,{img_data}" class="screenshot">'
+        elif r["estado"] == "NO_DATA":
+            img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc; text-align:center;">Sin datos — no se generó imagen del reporte</p>'
         else:
             img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc;">Captura no disponible</p>'
 

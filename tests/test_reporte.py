@@ -12,6 +12,7 @@ from utils.auditoria import auditar_excel_final
 import time
 from utils.screenshots import guardar_captura
 from utils.report_html import generar_html
+from utils.pdf_converter import pdf_pagina1_a_imagen
 import os
 
 
@@ -102,9 +103,6 @@ def test_reporte(driver, empresa):
 
                 continue  # siguiente reporte
 
-            # captura SIEMPRE después de generar
-            captura = guardar_captura(driver, empresa["nombre"], reporte)
-
             time.sleep(3)
 
             if not fisc.reporte_tiene_datos():
@@ -113,11 +111,24 @@ def test_reporte(driver, empresa):
                 estado = "FAIL"
                 errores_lista.append("No cargó el reporte")
                 errores_empresa.append(f"{nombre_formal}: no cargó")
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
 
             else:
                 print(f"    ✓ Reporte generado: {nombre_formal}")
 
+                # Descargar PDF y convertir primera página a imagen
+                limpiar_descargas(download_path)
+                try:
+                    pdf_path = fisc.descargar_pdf(download_path)
+                    screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
+                    captura = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
+                    print(f"    ✓ Imagen del PDF generada: {captura}")
+                except Exception as e_pdf:
+                    print(f"    ✗ No se pudo obtener imagen del PDF: {e_pdf}")
+                    captura = guardar_captura(driver, empresa["nombre"], reporte)
+
                 if reporte == "jor_diaria":
+                    limpiar_descargas(download_path)
                     archivo = fisc.descargar_excel(download_path)
 
                     if not archivo:

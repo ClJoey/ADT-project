@@ -62,6 +62,22 @@ class BasePage:
                 f"Interrumpido por tiempo de carga excedido ({timeout}s)"
             )
     
+    def wait_for_pdf(self, download_path, timeout=60):
+        tiempo_inicio = time.time()
+        while time.time() - tiempo_inicio < timeout:
+            archivos = os.listdir(download_path)
+            archivos_validos = [
+                f for f in archivos
+                if f.endswith(".pdf") and not f.startswith(".") and not f.endswith(".crdownload")
+            ]
+            if archivos_validos:
+                ruta_completa = os.path.join(download_path, archivos_validos[0])
+                time.sleep(2)
+                if os.path.getsize(ruta_completa) > 0:
+                    return ruta_completa
+            time.sleep(2)
+        raise Exception("No se descargó el archivo .pdf correctamente (Timeout)")
+
     def wait_for_file(self, download_path, timeout=60):
         tiempo_inicio = time.time()
 

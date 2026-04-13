@@ -1,6 +1,31 @@
 import pdfkit
 import os
 import platform
+from pdf2image import convert_from_path
+
+# Ruta a los binarios de Poppler en Windows.
+# Descarga desde: https://github.com/oschwartz10612/poppler-windows/releases
+# y ajusta esta ruta al directorio 'bin' de tu instalación.
+POPPLER_PATH_WINDOWS = r"C:\poppler\Library\bin"
+
+
+def pdf_pagina1_a_imagen(pdf_path, output_dir, nombre_base, dpi=200):
+    """Convierte la primera página de un PDF a imagen PNG de alta calidad."""
+    try:
+        kwargs = {"dpi": dpi, "first_page": 1, "last_page": 1}
+        if platform.system() == "Windows":
+            kwargs["poppler_path"] = POPPLER_PATH_WINDOWS
+
+        imagenes = convert_from_path(pdf_path, **kwargs)
+        if not imagenes:
+            return None
+        os.makedirs(output_dir, exist_ok=True)
+        img_path = os.path.join(output_dir, f"{nombre_base}.png")
+        imagenes[0].save(img_path, "PNG")
+        return img_path
+    except Exception as e:
+        print(f"    ✗ Error convirtiendo PDF a imagen: {e}")
+        return None
 
 def convertir_html_a_pdf(directorio_reportes):
     # Configuración de la ruta de wkhtmltopdf según el sistema

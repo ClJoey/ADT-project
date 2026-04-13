@@ -28,6 +28,7 @@ class FiscPage(BasePage):
 
     REPORTE_BTN = (By.ID, "Vertical_mainMenu_Menu_DXI0_T")
     DOWN_EXCEL = (By.CSS_SELECTOR, "a[id*='dviDescargarEXCEL_View_HA']")
+    DOWN_PDF   = (By.CSS_SELECTOR, "a[id*='dviDescargarPDF_View_HA']")
     BTN_CARGO = (By.CSS_SELECTOR, "a[id*='dviCargosBinding_ObjectsCreation_Menu_DXI0_T']")
     ALERTA_SIN_DATOS = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
 
@@ -93,7 +94,18 @@ class FiscPage(BasePage):
     
 
 
-    # 3. Descargar Excel
+    # 3. Descargar PDF del reporte
+    def descargar_pdf(self, download_path):
+        boton = WebDriverWait(self.driver, 20).until(
+            EC.presence_of_element_located(self.DOWN_PDF)
+        )
+        time.sleep(2)
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", boton)
+        time.sleep(1)
+        self.driver.execute_script("arguments[0].click();", boton)
+        return self.wait_for_pdf(download_path)
+
+    # 4. Descargar Excel
     def descargar_excel(self, download_path):
         boton = WebDriverWait(self.driver, 20).until(
             EC.presence_of_element_located(self.DOWN_EXCEL)
