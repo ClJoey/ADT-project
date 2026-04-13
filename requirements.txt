@@ -6,3 +6,6 @@ openpyxl
 pytest-html
 pdfkit
 PyPDF2
+pdf2image
+Pillow
+pytest-metadata
