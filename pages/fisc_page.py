@@ -31,7 +31,7 @@ class FiscPage(BasePage):
     DOWN_PDF   = (By.CSS_SELECTOR, "a[id*='dviDescargarPDF_View_HA']")
     BTN_CARGO = (By.CSS_SELECTOR, "a[id*='dviCargosBinding_ObjectsCreation_Menu_DXI0_T']")
     ALERTA_SIN_DATOS = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
-    TABLA_VACIA      = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(text(),'Sin datos para mostrar')]")
+    TABLA_VACIA      = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(.,'Sin datos para mostrar')]")
 
     # 1. Seleccionar reporte dinámico
     def seleccionar_reporte(self, nombre_reporte):

@@ -82,7 +82,7 @@ def test_reporte(driver, empresa):
                     "errores": errores_lista,
                     "captura": captura
                 })
-                time.sleep(4)  # esperar que aparezca alerta y evitar solapamiento de capturas
+                time.sleep(4)
                 continue
 
             if not ok_reporte:
@@ -116,9 +116,12 @@ def test_reporte(driver, empresa):
             else:
                 print(f"    ✓ Reporte generado: {nombre_formal}")
 
+                # Captura inmediata del estado actual — garantiza evidencia
+                # independientemente de lo que detectemos después
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_estado")
+
                 if fisc.hay_tabla_vacia():
                     print(f"    Sin datos para mostrar en {nombre_formal}")
-                    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_tabla_vacia")
                     errores_lista.append("Sin datos para mostrar")
                     resultados_empresa["reportes"].append({
                         "nombre": nombre_formal,
@@ -128,16 +131,17 @@ def test_reporte(driver, empresa):
                     })
                     continue
 
-                # Descargar PDF y convertir primera página a imagen
+                # Tiene datos reales: reemplazar captura con imagen del PDF
                 limpiar_descargas(download_path)
                 try:
                     pdf_path = fisc.descargar_pdf(download_path)
                     screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
-                    captura = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
+                    captura_pdf = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
+                    if captura_pdf:
+                        captura = captura_pdf
                     print(f"    ✓ Imagen del PDF generada: {captura}")
                 except Exception as e_pdf:
                     print(f"    ✗ No se pudo obtener imagen del PDF: {e_pdf}")
-                    captura = guardar_captura(driver, empresa["nombre"], reporte)
 
                 if reporte == "jor_diaria":
                     limpiar_descargas(download_path)

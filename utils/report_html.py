@@ -21,7 +21,6 @@ def generar_html(resultados_empresa):
     ok_count = sum(1 for r in reportes if r["estado"] == "OK")
     fail_count = total - ok_count
 
-    # 🚀 1. GENERAR LA VISTA DE PÁJARO (Tabla de Resumen)
     filas_resumen = ""
     for i, r in enumerate(reportes):
         if r["estado"] == "OK":
@@ -63,7 +62,6 @@ def generar_html(resultados_empresa):
     </div>
     """
 
-    # 🚀 2. GENERAR BLOQUES DE DETALLE
     bloques = ""
     for i, r in enumerate(reportes):
         if r["estado"] == "OK":
@@ -87,7 +85,6 @@ def generar_html(resultados_empresa):
         else:
             img_tag = '<p style="color:gray; padding:20px; border:1px dashed #ccc;">Captura no disponible</p>'
 
-        # 🚩 CORRECCIÓN: Quitamos el 'if i == 0'. Ahora TODOS los reportes inician en hoja nueva.
         estilo_salto = "page-break-before: always;"
 
         bloques += f"""
@@ -105,7 +102,6 @@ def generar_html(resultados_empresa):
         </div>
         """
 
-    # 🚀 3. ENSAMBLAR TODO EL HTML
     html = f"""
     <!DOCTYPE html>
     <html lang="es">
