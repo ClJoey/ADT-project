@@ -119,8 +119,6 @@ def auditar_excel_final(ruta_excel):
     return True, []
 
 # --- BLOQUE DE PRUEBA LOCAL ---
-# Este bloque SOLO se ejecuta si corres este archivo directamente.
-# Cuando pytest lo importa para el test real, este bloque SE IGNORA.
 if __name__ == "__main__":
     # Usamos una ruta relativa que funcione en cualquier carpeta
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))

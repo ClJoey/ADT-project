@@ -12,4 +12,4 @@ def guardar_captura(driver, empresa, reporte):
 
     driver.save_screenshot(ruta)
 
-    return ruta
+    return os.path.abspath(ruta)

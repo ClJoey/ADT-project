@@ -3,9 +3,6 @@ import os
 import platform
 from pdf2image import convert_from_path
 
-# Ruta a los binarios de Poppler en Windows.
-# Descarga desde: https://github.com/oschwartz10612/poppler-windows/releases
-# y ajusta esta ruta al directorio 'bin' de tu instalación.
 POPPLER_PATH_WINDOWS = r"C:\poppler-25.12.0\Library\bin"
 
 
@@ -28,7 +25,6 @@ def pdf_pagina1_a_imagen(pdf_path, output_dir, nombre_base, dpi=200):
         return None
 
 def convertir_html_a_pdf(directorio_reportes):
-    # Configuración de la ruta de wkhtmltopdf según el sistema
     if platform.system() == "Windows":
         # Ajusta esta ruta a donde lo instalaste en tu PC
         path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
@@ -48,7 +44,7 @@ def convertir_html_a_pdf(directorio_reportes):
         'quiet': ''
     }
 
-    print("🚀 Iniciando conversión a PDF...")
+    print("Iniciando conversión a PDF...")
     
     for archivo in os.listdir(directorio_reportes):
         if archivo.endswith(".html"):

@@ -54,7 +54,7 @@ def test_reporte(driver, empresa):
         errores_lista = []
         captura = None
 
-        # 🚀 CORRECCIÓN: Usamos REPORTE_NOMBRES_FORMALES que es el que está en FiscPage
+        # CORRECCIÓN: Usamos REPORTE_NOMBRES_FORMALES que es el que está en FiscPage
         nombre_formal = fisc.REPORTE_NOMBRES_FORMALES.get(reporte, reporte)
 
         print(f"\n>>> Iniciando reporte: {nombre_formal}")
@@ -170,7 +170,6 @@ def test_reporte(driver, empresa):
             estado = "FAIL"
             errores_lista.append("Interrumpido por tiempo de carga excedido")
             errores_empresa.append(f"{nombre_formal}: Interrumpido por tiempo de carga excedido")
-
             captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_timeout")
 
             print(f"    ↺ Deteniendo carga pendiente y volviendo al menú...")
