@@ -1,4 +1,3 @@
-import datetime
 import pytest
 from conftest import driver
 from data.empresas import EMPRESAS
@@ -16,15 +15,106 @@ from utils.pdf_converter import pdf_pagina1_a_imagen
 import os
 
 
+class ReporteError(Exception):
+    """Error en la generación del reporte. Puede transportar una lista de errores detallados."""
+    def __init__(self, message, errores_lista=None):
+        super().__init__(message)
+        self.errores_lista = errores_lista if errores_lista is not None else [message]
+
+
+def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_formal):
+    """
+    Ejecuta el flujo completo de un reporte en un único intento.
+
+    Retorna (estado, errores_lista, captura) si el flujo termina normalmente
+    (incluyendo casos NO_DATA o tabla vacía).
+
+    Lanza ReporteError o LoaderTimeoutError si el flujo falla, para que el
+    llamador pueda activar la lógica de reintento con recuperación.
+    """
+    captura = None
+
+    fisc.seleccionar_reporte(reporte)
+
+    # Detección temprana de pantalla en blanco: si el formulario no cargó,
+    # no esperamos el timeout largo de generar_reporte (15 s), fallamos de inmediato.
+    if fisc.pantalla_en_blanco(timeout=3):
+        raise ReporteError("Pantalla en blanco: el formulario del reporte no cargó")
+
+    if empresa["filtro_cargo"] and reporte not in ["diario", "incidentes"]:
+        fisc.seleccionar_cargo(empresa["Cargo"])
+        print(f"    ✓ Cargo filtrado: {empresa['Cargo']}")
+
+    ok_reporte, sin_datos = fisc.generar_reporte()
+
+    # Caso especial NO_DATA: detectado durante el loader (rápido) o como fallback post-loader.
+    # No es un fallo → no activa el reintento.
+    if sin_datos or fisc.hay_sin_datos():
+        print(f"    {nombre_formal} sin datos")
+        # Esperar a que el fade-in del toast complete antes de capturar.
+        # Sin este sleep la alerta puede aparecer semi-transparente en la imagen.
+        time.sleep(1)
+        captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
+        # Esperar a que el toast desaparezca por completo antes de continuar.
+        time.sleep(3)
+        return "NO_DATA", ["No hay trabajadores para este reporte"], captura
+
+    if not ok_reporte:
+        raise ReporteError("Botón Generar Reporte no apareció")
+
+    time.sleep(3)
+
+    if not fisc.reporte_tiene_datos():
+        raise ReporteError("No cargó el reporte")
+
+    print(f"    ✓ Reporte generado: {nombre_formal}")
+    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_estado")
+
+    if fisc.hay_tabla_vacia():
+        print(f"    Sin datos para mostrar en {nombre_formal}")
+        return "OK", ["Sin datos para mostrar"], captura
+
+    # Tiene datos reales: reemplazar captura con imagen del PDF
+    limpiar_descargas(download_path)
+    try:
+        pdf_path = fisc.descargar_pdf(download_path)
+        screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
+        captura_pdf = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
+        if captura_pdf:
+            captura = captura_pdf
+        print(f"    ✓ Imagen del PDF generada: {captura}")
+    except Exception as e_pdf:
+        print(f"    ✗ No se pudo obtener imagen del PDF: {e_pdf}")
+
+    if reporte == "jor_diaria":
+        limpiar_descargas(download_path)
+        archivo = fisc.descargar_excel(download_path)
+
+        if not archivo:
+            print(f"    ✗ No se descargó archivo")
+            raise ReporteError("No se descargó archivo Excel")
+
+        print(f"    ✓ Archivo descargado: {archivo}")
+        ok, errores = auditar_excel_final(archivo)
+
+        if ok:
+            print("    ✓ Auditoría OK")
+        else:
+            print(f"    ✗ Auditoría FALLÓ: {errores}")
+            raise ReporteError(f"Auditoría fallida: {errores}", errores_lista=errores)
+
+    return "OK", [], captura
+
+
 @pytest.mark.parametrize("empresa", EMPRESAS, ids=[e["nombre"] for e in EMPRESAS])
 def test_reporte(driver, empresa):
     # Esto busca la carpeta 'downloads' en la raíz del proyecto
-    download_path = os.path.abspath("downloads") 
-    
+    download_path = os.path.abspath("downloads")
+
     # Asegurarnos de que la carpeta existe antes de limpiar
     if not os.path.exists(download_path):
         os.makedirs(download_path)
-        
+
     limpiar_descargas(download_path)
 
     # LOGIN
@@ -50,151 +140,47 @@ def test_reporte(driver, empresa):
     }
 
     for reporte in empresa["reportes"]:
+        nombre_formal = fisc.REPORTE_NOMBRES_FORMALES.get(reporte, reporte)
         estado = "OK"
         errores_lista = []
         captura = None
 
-        # CORRECCIÓN: Usamos REPORTE_NOMBRES_FORMALES que es el que está en FiscPage
-        nombre_formal = fisc.REPORTE_NOMBRES_FORMALES.get(reporte, reporte)
-
         print(f"\n>>> Iniciando reporte: {nombre_formal}")
 
-        try:
-            fisc.seleccionar_reporte(reporte)
-
-            if empresa["filtro_cargo"] and reporte not in ["diario", "incidentes"]:
-                fisc.seleccionar_cargo(empresa["Cargo"])
-                print(f"    ✓ Cargo filtrado: {empresa['Cargo']}")
-
-            ok_reporte = fisc.generar_reporte()
-
-            if fisc.hay_sin_datos():
-                print(f"    {nombre_formal} sin datos")
-
-                estado = "NO_DATA"
-                errores_lista.append("No hay trabajadores para este reporte")
-                time.sleep(1)
-                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
-
-                resultados_empresa["reportes"].append({
-                    "nombre": nombre_formal,
-                    "estado": estado,
-                    "errores": errores_lista,
-                    "captura": captura
-                })
-                time.sleep(4)
-                continue
-
-            if not ok_reporte:
-                print(f"    ✗ No apareció botón generar reporte")
-
-                estado = "FAIL"
-                errores_lista.append("Botón Generar Reporte no apareció")
-                errores_empresa.append(f"{nombre_formal}: no se pudo generar reporte")
-
-                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
-
-                resultados_empresa["reportes"].append({
-                    "nombre": nombre_formal,
-                    "estado": estado,
-                    "errores": errores_lista,
-                    "captura": captura
-                })
-
-                continue  # siguiente reporte
-
-            time.sleep(3)
-
-            if not fisc.reporte_tiene_datos():
-                print(f"    ✗ Reporte {nombre_formal} no cargó")
-
-                estado = "FAIL"
-                errores_lista.append("No cargó el reporte")
-                errores_empresa.append(f"{nombre_formal}: no cargó")
-                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
-
-            else:
-                print(f"    ✓ Reporte generado: {nombre_formal}")
-
-                # Captura inmediata del estado actual — garantiza evidencia
-                # independientemente de lo que detectemos después
-                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_estado")
-
-                if fisc.hay_tabla_vacia():
-                    print(f"    Sin datos para mostrar en {nombre_formal}")
-                    errores_lista.append("Sin datos para mostrar")
-                    resultados_empresa["reportes"].append({
-                        "nombre": nombre_formal,
-                        "estado": "OK",
-                        "errores": errores_lista,
-                        "captura": captura
-                    })
-                    continue
-
-                # Tiene datos reales: reemplazar captura con imagen del PDF
-                limpiar_descargas(download_path)
-                try:
-                    pdf_path = fisc.descargar_pdf(download_path)
-                    screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
-                    captura_pdf = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
-                    if captura_pdf:
-                        captura = captura_pdf
-                    print(f"    ✓ Imagen del PDF generada: {captura}")
-                except Exception as e_pdf:
-                    print(f"    ✗ No se pudo obtener imagen del PDF: {e_pdf}")
-
-                if reporte == "jor_diaria":
-                    limpiar_descargas(download_path)
-                    archivo = fisc.descargar_excel(download_path)
-
-                    if not archivo:
-                        print(f"    ✗ No se descargó archivo")
-
-                        estado = "FAIL"
-                        errores_lista.append("No se descargó archivo")
-                        errores_empresa.append(f"{nombre_formal}: No se descargó archivo")
-
-                    else:
-                        print(f"    ✓ Archivo descargado: {archivo}")
-
-                        ok, errores = auditar_excel_final(archivo)
-
-                        if ok:
-                            print("    ✓ Auditoría OK")
-                        else:
-                            print(f"    ✗ Auditoría FALLÓ: {errores}")
-
-                            estado = "FAIL"
-                            errores_lista = errores
-                            errores_empresa.append(f"{nombre_formal}: {errores}")
-
-        except LoaderTimeoutError as e:
-            print(f"    ✗ Tiempo de carga excedido en {nombre_formal}: {e}")
-
-            estado = "FAIL"
-            errores_lista.append("Interrumpido por tiempo de carga excedido")
-            errores_empresa.append(f"{nombre_formal}: Interrumpido por tiempo de carga excedido")
-            captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_timeout")
-
-            print(f"    ↺ Deteniendo carga pendiente y volviendo al menú...")
-            driver.execute_script('window.stop();')
-            driver.get(empresa['url_menu'])
+        for intento in range(2):
             try:
-                time.sleep(3)
-                fisc.wait_loader()
-                fisc.wait_for_visible(fisc.LIST_DT)
-                print(f"    ✓ Menú cargado, continuando con siguiente reporte")
-            except Exception as ex:
-                print(f"    ✗ No se pudo confirmar carga del menú ({ex}), continuando igual")
+                estado, errores_lista, captura = _intentar_reporte(
+                    driver, fisc, empresa, reporte, download_path, nombre_formal
+                )
+                # Intento exitoso: salir del bucle de reintentos
+                break
 
-        except Exception as e:
-            print(f"Error inesperado en {nombre_formal}: {e}")
+            except Exception as e:
+                error_msg = str(e)
+                # ReporteError puede llevar una lista de errores detallada;
+                # para cualquier otra excepción usamos el mensaje como lista.
+                errores_lista_capturados = getattr(e, 'errores_lista', [error_msg])
 
-            estado = "FAIL"
-            errores_lista.append(str(e))
-            errores_empresa.append(f"{nombre_formal}: {e}")
+                print(f"    ✗ {nombre_formal} (intento {intento + 1}/2): {error_msg}")
 
-            captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
+                if intento == 0:
+                    # ── Acción de Recuperación ──────────────────────────────
+                    # Guardamos evidencia del primer fallo
+                    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_intento1")
+                    print(f"    ↺ Recuperando: deteniendo carga y volviendo al menú...")
+                    driver.execute_script('window.stop();')
+                    driver.get(empresa['url_menu'])
+                    time.sleep(5)
+                    print(f"    ↺ Segundo intento para: {nombre_formal}")
+                    # El bucle continúa con intento == 1
+
+                else:
+                    # ── Segundo intento también falló → FAIL definitivo ─────
+                    print(f"    ✗✗ Segundo intento fallido para {nombre_formal}")
+                    estado = "FAIL"
+                    errores_lista = errores_lista_capturados
+                    errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
 
         # SIEMPRE guardar resultado con el nombre formal
         resultados_empresa["reportes"].append({

@@ -77,20 +77,47 @@ class FiscPage(BasePage):
 
     # 2. Generar reporte
     def generar_reporte(self, timeout=15):
+        """
+        Hace click en 'Generar Reporte' y espera que el loader termine.
+        Retorna (ok, sin_datos) donde:
+          - ok       : False si el botón no apareció, True en cualquier otro caso.
+          - sin_datos: True si se detectó el toast 'No hay trabajadores' ANTES
+                       de que el loader terminara (ventana donde el toast todavía existe).
+        """
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.element_to_be_clickable(self.REPORTE_BTN)
             )
         except:
             print("Botón Generar Reporte no apareció")
-            return False  # NO rompe el flujo
+            return False, False
 
         time.sleep(2)
         element = self.driver.find_element(*self.REPORTE_BTN)
         self.driver.execute_script("arguments[0].click();", element)
 
+        # Detectar el toast ANTES de que el loader termine.
+        # El toast aparece y desaparece mientras el loader está activo,
+        # por lo que comprobarlo después de wait_loader() llega siempre tarde.
+        sin_datos = self._detectar_toast_sin_datos(timeout=5)
+
         self.wait_loader()
-        return True  # éxito
+        return True, sin_datos
+
+    def _detectar_toast_sin_datos(self, timeout=5):
+        """
+        Detecta el toast 'No hay trabajadores' justo tras el click del botón,
+        mientras el loader todavía está activo.
+        Usa presence_of_element_located (no visibility) para capturarlo
+        incluso durante el fade-in antes de que sea completamente opaco.
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located(self.ALERTA_SIN_DATOS)
+            )
+            return True
+        except:
+            return False
 
     
 
@@ -163,9 +190,13 @@ class FiscPage(BasePage):
             return False
     
     def hay_sin_datos(self, timeout=5):
+        """
+        Fallback: comprueba si el toast sigue en el DOM tras el wait_loader.
+        Usa presence (no visibility) para detectarlo incluso durante el fade-out.
+        """
         try:
             WebDriverWait(self.driver, timeout).until(
-                EC.visibility_of_element_located(self.ALERTA_SIN_DATOS)
+                EC.presence_of_element_located(self.ALERTA_SIN_DATOS)
             )
             return True
         except:
@@ -179,3 +210,17 @@ class FiscPage(BasePage):
             return True
         except:
             return False
+
+    def pantalla_en_blanco(self, timeout=3):
+        """
+        Detecta si el formulario del reporte no cargó (pantalla en blanco).
+        Retorna True si el botón 'Generar Reporte' no aparece en el timeout dado,
+        lo que indica que el contenido del formulario no se renderizó.
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located(self.REPORTE_BTN)
+            )
+            return False  # Botón presente → página cargó correctamente
+        except:
+            return True   # No encontró el botón → pantalla en blanco
