@@ -45,18 +45,23 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
         fisc.seleccionar_cargo(empresa["Cargo"])
         print(f"    ✓ Cargo filtrado: {empresa['Cargo']}")
 
-    ok_reporte, sin_datos = fisc.generar_reporte()
+    ok_reporte, tipo_alerta = fisc.generar_reporte()
 
-    # Caso especial NO_DATA: detectado durante el loader (rápido) o como fallback post-loader.
-    # No es un fallo → no activa el reintento.
-    if sin_datos or fisc.hay_sin_datos():
+    # ── Alerta ConnectionString: error transitorio del servidor ───────────────
+    # Activa el soft-reset y el segundo intento.
+    if tipo_alerta == "error_conexion" or fisc.hay_error_conexion():
+        print(f"    ✗ Error de servidor en {nombre_formal}: ConnectionString no inicializado")
+        time.sleep(1)  # esperar que el fade-in complete → alerta visible y sólida en la captura
+        captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_conexion")
+        time.sleep(3)  # esperar que el toast desaparezca antes de resetear
+        raise ReporteError("Error de servidor: No se ha inicializado la propiedad ConnectionString")
+
+    # ── Sin datos: NO_DATA, no es un fallo, no activa reintento ───────────────
+    if tipo_alerta == "sin_datos" or fisc.hay_sin_datos():
         print(f"    {nombre_formal} sin datos")
-        # Esperar a que el fade-in del toast complete antes de capturar.
-        # Sin este sleep la alerta puede aparecer semi-transparente en la imagen.
-        time.sleep(1)
+        time.sleep(1)  # esperar que el fade-in complete → alerta visible y sólida en la captura
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
-        # Esperar a que el toast desaparezca por completo antes de continuar.
-        time.sleep(3)
+        time.sleep(3)  # esperar que el toast desaparezca antes de continuar
         return "NO_DATA", ["No hay trabajadores para este reporte"], captura
 
     if not ok_reporte:

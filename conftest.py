@@ -49,6 +49,11 @@ def driver():
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
+    # Timeouts extendidos para empresas grandes (ej. Sigdo Koppers)
+    # que generan reportes pesados y pueden superar los valores por defecto.
+    driver.set_page_load_timeout(300)   # 5 minutos para carga de página
+    driver.set_script_timeout(120)      # 2 minutos para ejecuciones JS
+
     # Solo maximizar en local (en CI el window-size ya hace el trabajo)
     if not os.getenv("CI"):
         driver.maximize_window()

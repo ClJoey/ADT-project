@@ -30,8 +30,14 @@ class FiscPage(BasePage):
     DOWN_EXCEL = (By.CSS_SELECTOR, "a[id*='dviDescargarEXCEL_View_HA']")
     DOWN_PDF   = (By.CSS_SELECTOR, "a[id*='dviDescargarPDF_View_HA']")
     BTN_CARGO = (By.CSS_SELECTOR, "a[id*='dviCargosBinding_ObjectsCreation_Menu_DXI0_T']")
-    ALERTA_SIN_DATOS = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
-    TABLA_VACIA      = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(.,'Sin datos para mostrar')]")
+    ALERTA_SIN_DATOS  = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
+    ALERTA_CONEXION   = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'ConnectionString')]")
+    # XPATH unificado: captura cualquiera de los dos toasts con una sola espera
+    _ALERTA_CUALQUIERA = (By.XPATH,
+        "//div[contains(@class,'dx-toast-message') and "
+        "(contains(text(),'No hay trabajadores') or contains(text(),'ConnectionString'))]"
+    )
+    TABLA_VACIA       = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(.,'Sin datos para mostrar')]")
 
     # 1. Seleccionar reporte dinámico
     def seleccionar_reporte(self, nombre_reporte):
@@ -79,10 +85,13 @@ class FiscPage(BasePage):
     def generar_reporte(self, timeout=15):
         """
         Hace click en 'Generar Reporte' y espera que el loader termine.
-        Retorna (ok, sin_datos) donde:
-          - ok       : False si el botón no apareció, True en cualquier otro caso.
-          - sin_datos: True si se detectó el toast 'No hay trabajadores' ANTES
-                       de que el loader terminara (ventana donde el toast todavía existe).
+        Retorna (ok, tipo_alerta) donde:
+          - ok          : False si el botón no apareció, True en cualquier otro caso.
+          - tipo_alerta : 'sin_datos'      → toast "No hay trabajadores"
+                          'error_conexion' → toast "ConnectionString"
+                          None             → ningún toast detectado
+        La detección ocurre ANTES de wait_loader() porque el toast vive y muere
+        mientras el loader está activo; esperarlo después siempre llega tarde.
         """
         try:
             WebDriverWait(self.driver, timeout).until(
@@ -90,34 +99,36 @@ class FiscPage(BasePage):
             )
         except:
             print("Botón Generar Reporte no apareció")
-            return False, False
+            return False, None
 
         time.sleep(2)
         element = self.driver.find_element(*self.REPORTE_BTN)
         self.driver.execute_script("arguments[0].click();", element)
 
-        # Detectar el toast ANTES de que el loader termine.
-        # El toast aparece y desaparece mientras el loader está activo,
-        # por lo que comprobarlo después de wait_loader() llega siempre tarde.
-        sin_datos = self._detectar_toast_sin_datos(timeout=5)
+        tipo_alerta = self._detectar_toast_post_click(timeout=5)
 
         self.wait_loader()
-        return True, sin_datos
+        return True, tipo_alerta
 
-    def _detectar_toast_sin_datos(self, timeout=5):
+    def _detectar_toast_post_click(self, timeout=5):
         """
-        Detecta el toast 'No hay trabajadores' justo tras el click del botón,
-        mientras el loader todavía está activo.
-        Usa presence_of_element_located (no visibility) para capturarlo
-        incluso durante el fade-in antes de que sea completamente opaco.
+        Espera a que aparezca cualquier toast conocido tras el click.
+        Un único WebDriverWait cubre ambas alertas: si el elemento entra al DOM
+        (incluso durante el fade-in, antes de ser completamente opaco) lo captura.
+        Retorna 'sin_datos', 'error_conexion', o None.
         """
         try:
-            WebDriverWait(self.driver, timeout).until(
-                EC.presence_of_element_located(self.ALERTA_SIN_DATOS)
+            el = WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located(self._ALERTA_CUALQUIERA)
             )
-            return True
+            texto = el.text
+            if "No hay trabajadores" in texto:
+                return "sin_datos"
+            if "ConnectionString" in texto:
+                return "error_conexion"
+            return None
         except:
-            return False
+            return None
 
     
 
@@ -191,12 +202,25 @@ class FiscPage(BasePage):
     
     def hay_sin_datos(self, timeout=5):
         """
-        Fallback: comprueba si el toast sigue en el DOM tras el wait_loader.
-        Usa presence (no visibility) para detectarlo incluso durante el fade-out.
+        Fallback: comprueba si el toast 'No hay trabajadores' sigue en el DOM
+        tras el wait_loader. Usa presence para detectarlo incluso en fade-out.
         """
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.presence_of_element_located(self.ALERTA_SIN_DATOS)
+            )
+            return True
+        except:
+            return False
+
+    def hay_error_conexion(self, timeout=5):
+        """
+        Fallback: comprueba si el toast 'ConnectionString' sigue en el DOM
+        tras el wait_loader. Activa el reintento si lo detecta.
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.presence_of_element_located(self.ALERTA_CONEXION)
             )
             return True
         except:
