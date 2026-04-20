@@ -16,10 +16,15 @@ import os
 
 
 class ReporteError(Exception):
-    """Error en la generación del reporte. Puede transportar una lista de errores detallados."""
+    """Error en la generación del reporte — FAIL inmediato, sin recovery."""
     def __init__(self, message, errores_lista=None):
         super().__init__(message)
         self.errores_lista = errores_lista if errores_lista is not None else [message]
+
+
+class RecoverableError(Exception):
+    """Error de carga de página — activa recovery (volver al selector de empresa)."""
+    pass
 
 
 def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_formal):
@@ -39,7 +44,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     # Detección temprana de pantalla en blanco: si el formulario no cargó,
     # no esperamos el timeout largo de generar_reporte (15 s), fallamos de inmediato.
     if fisc.pantalla_en_blanco(timeout=3):
-        raise ReporteError("Pantalla en blanco: el formulario del reporte no cargó")
+        raise RecoverableError("Pantalla en blanco: el formulario del reporte no cargó")
 
     if empresa["filtro_cargo"] and reporte not in ["diario", "incidentes"]:
         fisc.seleccionar_cargo(empresa["Cargo"])
@@ -51,23 +56,23 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     # generar_reporte() retornó sin llamar wait_loader() cuando hay toast,
     # así que el toast todavía está visible en este punto.
     if tipo_alerta == "error_conexion":
-        print(f"    ✗ Error de servidor en {nombre_formal}: ConnectionString no inicializado")
-        time.sleep(0.5)  # dejar que el fade-in complete antes de capturar
+        print(f"    ✗ Error de conexión en {nombre_formal}")
+        time.sleep(0.5)
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_conexion")
-        time.sleep(3)  # esperar que el toast desaparezca
-        fisc.wait_loader()  # esperar loader pendiente
-        raise ReporteError("Error de servidor: No se ha inicializado la propiedad ConnectionString")
+        time.sleep(3)
+        fisc.wait_loader()
+        raise ReporteError("Error de conexión con la base de datos")
 
     if tipo_alerta == "sin_datos":
         print(f"    {nombre_formal} sin datos")
-        time.sleep(0.5)  # dejar que el fade-in complete antes de capturar
+        time.sleep(0.5)
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
-        time.sleep(3)  # esperar que el toast desaparezca
-        fisc.wait_loader()  # esperar loader pendiente
+        time.sleep(3)
+        fisc.wait_loader()
         return "NO_DATA", ["No hay trabajadores para este reporte"], captura
 
     if not ok_reporte:
-        raise ReporteError("Botón Generar Reporte no apareció")
+        raise RecoverableError("Botón Generar Reporte no apareció")
 
     time.sleep(3)
 
@@ -159,21 +164,16 @@ def test_reporte(driver, empresa):
                 estado, errores_lista, captura = _intentar_reporte(
                     driver, fisc, empresa, reporte, download_path, nombre_formal
                 )
-                # Intento exitoso: salir del bucle de reintentos
                 break
 
-            except Exception as e:
+            except RecoverableError as e:
+                # ── Botón no encontrado / Pantalla en blanco → recovery ────
                 error_msg = str(e)
-                # ReporteError puede llevar una lista de errores detallada;
-                # para cualquier otra excepción usamos el mensaje como lista.
-                errores_lista_capturados = getattr(e, 'errores_lista', [error_msg])
-
                 print(f"    ✗ {nombre_formal} (intento {intento + 1}/2): {error_msg}")
 
                 if intento == 0:
-                    # ── Acción de Recuperación ──────────────────────────────
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_intento1")
-                    print(f"    ↺ Recuperando: deteniendo carga y volviendo al selector de empresas...")
+                    print(f"    ↺ Recuperando: volviendo al selector de empresas...")
                     driver.execute_script('window.stop();')
                     driver.get("https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login")
                     time.sleep(3)
@@ -182,15 +182,22 @@ def test_reporte(driver, empresa):
                     init.confirm()
                     time.sleep(3)
                     print(f"    ↺ Segundo intento para: {nombre_formal}")
-                    # El bucle continúa con intento == 1
-
                 else:
-                    # ── Segundo intento también falló → FAIL definitivo ─────
                     print(f"    ✗✗ Segundo intento fallido para {nombre_formal}")
                     estado = "FAIL"
-                    errores_lista = errores_lista_capturados
+                    errores_lista = [error_msg]
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
+
+            except Exception as e:
+                # ── Cualquier otro error → FAIL inmediato, sin recovery ────
+                error_msg = str(e)
+                errores_lista = getattr(e, 'errores_lista', [error_msg])
+                print(f"    ✗ {nombre_formal}: {error_msg}")
+                estado = "FAIL"
+                errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error")
+                break
 
         # SIEMPRE guardar resultado con el nombre formal
         resultados_empresa["reportes"].append({
