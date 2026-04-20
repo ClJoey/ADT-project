@@ -52,6 +52,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     # así que el toast todavía está visible en este punto.
     if tipo_alerta == "error_conexion":
         print(f"    ✗ Error de servidor en {nombre_formal}: ConnectionString no inicializado")
+        time.sleep(0.5)  # dejar que el fade-in complete antes de capturar
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_conexion")
         time.sleep(3)  # esperar que el toast desaparezca
         fisc.wait_loader()  # esperar loader pendiente
@@ -59,6 +60,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
 
     if tipo_alerta == "sin_datos":
         print(f"    {nombre_formal} sin datos")
+        time.sleep(0.5)  # dejar que el fade-in complete antes de capturar
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_sin_datos")
         time.sleep(3)  # esperar que el toast desaparezca
         fisc.wait_loader()  # esperar loader pendiente
