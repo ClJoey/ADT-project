@@ -30,8 +30,9 @@ class FiscPage(BasePage):
     DOWN_EXCEL = (By.CSS_SELECTOR, "a[id*='dviDescargarEXCEL_View_HA']")
     DOWN_PDF   = (By.CSS_SELECTOR, "a[id*='dviDescargarPDF_View_HA']")
     BTN_CARGO = (By.CSS_SELECTOR, "a[id*='dviCargosBinding_ObjectsCreation_Menu_DXI0_T']")
-    ALERTA_SIN_DATOS = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
-    TABLA_VACIA      = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(text(),'Sin datos para mostrar')]")
+    ALERTA_SIN_DATOS      = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'No hay trabajadores')]")
+    ALERTA_CONNECTION_STR = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'ConnectionString')]")
+    TABLA_VACIA           = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(text(),'Sin datos para mostrar')]")
 
     # 1. Seleccionar reporte dinámico
     def seleccionar_reporte(self, nombre_reporte):
@@ -166,6 +167,15 @@ class FiscPage(BasePage):
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located(self.ALERTA_SIN_DATOS)
+            )
+            return True
+        except:
+            return False
+
+    def hay_connection_error(self, timeout=5):
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(self.ALERTA_CONNECTION_STR)
             )
             return True
         except:

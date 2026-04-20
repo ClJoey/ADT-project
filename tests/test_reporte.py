@@ -85,6 +85,23 @@ def test_reporte(driver, empresa):
                 time.sleep(4)  # esperar que aparezca alerta y evitar solapamiento de capturas
                 continue
 
+            if fisc.hay_connection_error():
+                print(f"    {nombre_formal} error de conexión a base de datos")
+
+                estado = "BAD_CONNECTION"
+                errores_lista.append("No se pudo conectar con la base de datos")
+                time.sleep(1)
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_bad_connection")
+
+                resultados_empresa["reportes"].append({
+                    "nombre": nombre_formal,
+                    "estado": estado,
+                    "errores": errores_lista,
+                    "captura": captura
+                })
+                time.sleep(4)
+                continue
+
             if not ok_reporte:
                 print(f"    ✗ No apareció botón generar reporte")
 
