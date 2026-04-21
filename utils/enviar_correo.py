@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 def enviar_reporte():
     remitente = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
-    destinatarios = ["joseph.cervantes@iplusd.cl"]
+    destinatarios = ["joseph.cervantes@iplusd.cl","josephmanolocervantesluna@gmail.com"]
 
     if not remitente or not password:
         logger.error("Faltan EMAIL_USER o EMAIL_PASS en las variables de entorno.")
