@@ -115,5 +115,5 @@ EMPRESAS = [
         "Cargo": None,
 	"file_name": "SKCOMSA",
 	"nom_informe": "CONSTRUCCIONES Y MONTAJES COM S.A."
-    }
+    },
 ]

@@ -27,6 +27,11 @@ class RecoverableError(Exception):
     pass
 
 
+class SesionIncorrectaError(RecoverableError):
+    """Sesión en empresa incorrecta — permite hasta 2 recuperaciones consecutivas."""
+    pass
+
+
 class ConexionError(ReporteError):
     """Error de conexión con la BD — FAIL inmediato + session recovery antes del siguiente reporte."""
     pass
@@ -56,7 +61,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
         print(f"    ✓ Cargo filtrado: {empresa['Cargo']}")
 
     if not fisc.verificar_empresa(empresa["nom_informe"]):
-        raise RecoverableError(
+        raise SesionIncorrectaError(
             f"Sesión en empresa incorrecta antes de generar reporte ({nombre_formal})"
         )
 
@@ -87,7 +92,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     time.sleep(3)
 
     if not fisc.reporte_tiene_datos():
-        raise ReporteError("No cargó el reporte")
+        raise RecoverableError("No cargó el reporte")
 
     print(f"    ✓ Reporte generado: {nombre_formal}")
     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_estado")
@@ -169,17 +174,42 @@ def test_reporte(driver, empresa):
 
         print(f"\n>>> Iniciando reporte: {nombre_formal}")
 
-        for intento in range(2):
+        sesion_incorrecta_max = 3  # hasta 2 recuperaciones para sesión incorrecta
+        max_intentos_default = 2
+
+        for intento in range(sesion_incorrecta_max):
             try:
                 estado, errores_lista, captura = _intentar_reporte(
                     driver, fisc, empresa, reporte, download_path, nombre_formal
                 )
                 break
 
-            except RecoverableError as e:
-                # ── Botón no encontrado / Pantalla en blanco → recovery ────
+            except SesionIncorrectaError as e:
                 error_msg = str(e)
-                print(f"    ✗ {nombre_formal} (intento {intento + 1}/2): {error_msg}")
+                print(f"    ✗ {nombre_formal} (intento {intento + 1}/{sesion_incorrecta_max}): {error_msg}")
+
+                if intento < sesion_incorrecta_max - 1:
+                    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_sesion_intento{intento + 1}")
+                    print(f"    ↺ Recuperando sesión incorrecta: volviendo al selector de empresas...")
+                    driver.execute_script('window.stop();')
+                    driver.get("https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login")
+                    time.sleep(3)
+                    init.seleccionar_empresa_por_rut(empresa["rut"])
+                    init.fisc_init()
+                    init.confirm()
+                    time.sleep(3)
+                    print(f"    ↺ Intento {intento + 2} para: {nombre_formal}")
+                else:
+                    print(f"    ✗✗ Todos los intentos de sesión fallaron para {nombre_formal}")
+                    estado = "FAIL"
+                    errores_lista = [error_msg]
+                    errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                    captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
+
+            except RecoverableError as e:
+                # ── Botón no encontrado / Pantalla en blanco → recovery (1 reintento) ────
+                error_msg = str(e)
+                print(f"    ✗ {nombre_formal} (intento {intento + 1}/{max_intentos_default}): {error_msg}")
 
                 if intento == 0:
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_intento1")
@@ -198,6 +228,7 @@ def test_reporte(driver, empresa):
                     errores_lista = [error_msg]
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
+                    break
 
             except ConexionError as e:
                 # ── Error de conexión BD → FAIL inmediato + session recovery ──

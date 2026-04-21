@@ -84,14 +84,15 @@ class FiscPage(BasePage):
     # 2. Generar reporte
     def generar_reporte(self, timeout=15):
         """
-        Hace click en 'Generar Reporte' y espera que el loader termine.
+        Hace click en 'Generar Reporte', espera que el loader termine y luego
+        detecta si quedó algún toast en el DOM.
         Retorna (ok, tipo_alerta) donde:
           - ok          : False si el botón no apareció, True en cualquier otro caso.
           - tipo_alerta : 'sin_datos'      → toast "No hay trabajadores"
                           'error_conexion' → toast "ConnectionString"
                           None             → ningún toast detectado
-        La detección ocurre ANTES de wait_loader() porque el toast vive y muere
-        mientras el loader está activo; esperarlo después siempre llega tarde.
+        La detección ocurre DESPUÉS de wait_loader() para capturar toasts que
+        aparecen al finalizar la carga (p. ej. ConnectionString).
         """
         try:
             WebDriverWait(self.driver, timeout).until(
@@ -105,14 +106,10 @@ class FiscPage(BasePage):
         element = self.driver.find_element(*self.REPORTE_BTN)
         self.driver.execute_script("arguments[0].click();", element)
 
+        self.wait_loader()
+
         tipo_alerta = self._detectar_toast_post_click(timeout=5)
 
-        if tipo_alerta is None:
-            # Sin alerta → esperar loader normalmente
-            self.wait_loader()
-
-        # Con alerta → retornar de inmediato para que el llamador capture
-        # la pantalla mientras el toast todavía es visible
         return True, tipo_alerta
 
     def _detectar_toast_post_click(self, timeout=5):
