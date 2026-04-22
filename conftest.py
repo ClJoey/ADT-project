@@ -65,3 +65,12 @@ def driver():
 
     # 4. Cierre limpio
     driver.quit()
+
+@pytest.fixture(scope="function")
+def logged_in_driver(driver):
+    from pages.login_page import LoginPage, URL
+    from data.credenciales import USER
+    login = LoginPage(driver)
+    login.load(URL)
+    login.login(USER[0]["usuario"], USER[0]["password"])
+    return driver

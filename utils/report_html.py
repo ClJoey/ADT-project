@@ -115,7 +115,7 @@ def generar_html(resultados_empresa):
                 margin: 0;
                 padding: 20px;
                 color: #333;
-                /* 🚩 CORRECCIÓN: Aseguramos que el body NO dispare hojas en blanco al final */
+                /*ORRECCIÓN: Aseguramos que el body NO dispare hojas en blanco al final */
                 page-break-after: avoid; 
             }}
             .container {{ 
@@ -182,7 +182,6 @@ def generar_html(resultados_empresa):
             </div>
 
             {resumen_tabla_html}
-
             {bloques}
         </div>
     </body>

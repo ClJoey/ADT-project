@@ -1,5 +1,12 @@
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from pages.base_page import BasePage
+
+URL = "https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login"
+
+TOAST_USUARIO_INVALIDO = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'El usuario indicado no es valido')]")
+TOAST_PASSWORD_INVALIDA = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'Contraseña invalida')]")
 
 
 class LoginPage(BasePage):
@@ -8,9 +15,7 @@ class LoginPage(BasePage):
     PASSWORD = (By.CSS_SELECTOR, "input[id*='dviPassword_Edit_I']")
     LOGIN_BTN = (By.ID, "Logon_PopupActions_Menu_DXI0_T")
 
-
-
-    def load(self, url):
+    def load(self, url=URL):
         self.driver.get(url)
 
     def login(self, user, password):
@@ -18,13 +23,32 @@ class LoginPage(BasePage):
         self.wait_and_click(self.LOGIN_BTN)
         self.wait_and_type(self.PASSWORD, password)
         self.wait_and_click(self.LOGIN_BTN)
-    
+
     def username(self, user):
         self.wait_and_type(self.USERNAME, user)
         self.wait_and_click(self.LOGIN_BTN)
 
-    def is_error_user_displayed(self):
-        return self.driver.find_element(By.XPATH, "//div[contains(@class, 'dx-toast-message') and contains(text(), 'El usuario indicado no es valido')]").is_displayed()
-    
-    def is_error_user_password_displayed(self):
-        return self.driver.find_element(By.XPATH, "//div[contains(@class, 'dx-toast-message') and contains(text(), 'Contraseña invalida')]").is_displayed()
+    def is_login_exitoso(self):
+        try:
+            self.wait_for_visible((By.CSS_SELECTOR, "table.LogonContent.LogonContentWidth"))
+            return True
+        except:
+            return False
+
+    def is_error_user_displayed(self, timeout=10):
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(TOAST_USUARIO_INVALIDO)
+            )
+            return True
+        except:
+            return False
+
+    def is_error_user_password_displayed(self, timeout=10):
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(TOAST_PASSWORD_INVALIDA)
+            )
+            return True
+        except:
+            return False

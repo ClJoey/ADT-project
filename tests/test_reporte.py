@@ -20,9 +20,10 @@ logger = get_logger(__name__)
 
 class ReporteError(Exception):
     """Error en la generación del reporte — FAIL inmediato, sin recovery."""
-    def __init__(self, message, errores_lista=None):
+    def __init__(self, message, errores_lista=None, captura=None):
         super().__init__(message)
         self.errores_lista = errores_lista if errores_lista is not None else [message]
+        self.captura = captura
 
 
 class RecoverableError(Exception):
@@ -74,7 +75,7 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
         captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_conexion")
         time.sleep(3)
         fisc.wait_loader()
-        raise ConexionError("Error de conexión con la base de datos")
+        raise ConexionError("Error de conexión con la base de datos", captura=captura)
 
     if tipo_alerta == "sin_datos":
         logger.warning(f"{nombre_formal} sin datos")
@@ -224,6 +225,7 @@ def test_reporte(driver, empresa):
 
             except ConexionError as e:
                 error_msg = str(e)
+                captura = getattr(e, 'captura', None)
                 logger.error(f"{nombre_formal}: {error_msg}")
                 estado = "FAIL"
                 errores_lista = [error_msg]
