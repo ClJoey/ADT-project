@@ -200,7 +200,7 @@ def test_reporte(driver, empresa):
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
 
-            except RecoverableError as e:
+            except (RecoverableError, LoaderTimeoutError) as e:
                 error_msg = str(e)
                 logger.warning(f"{nombre_formal} (intento {intento + 1}/{max_intentos_default}): {error_msg}")
 
