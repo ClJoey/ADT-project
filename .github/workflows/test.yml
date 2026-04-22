@@ -5,7 +5,9 @@ on:
     branches: [ "ci-cd-tests", "feature-pdf-email" ]
   pull_request:
     branches: [ "ci-cd-tests" ]
-  workflow_dispatch: 
+  workflow_dispatch:
+  schedule:
+    - cron: '0 10 * * *'  # 07:00 Chile (CLST UTC-3)
 
 jobs:
   test:
@@ -43,7 +45,7 @@ jobs:
         TZ: "America/Santiago"
         PORTAL_USER: ${{ secrets.PORTAL_USER }}
         PORTAL_PASS: ${{ secrets.PORTAL_PASS }}
-      run: pytest tests/test_login.py -s
+      run: pytest tests -s
 
     - name: Generar PDF Consolidado
       if: always()
