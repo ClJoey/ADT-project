@@ -1,4 +1,5 @@
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import StaleElementReferenceException
 from pages.base_page import BasePage
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -47,20 +48,25 @@ class FiscPage(BasePage):
         logger.debug(f"[fisc_page] Buscando locator para: {nombre_reporte}")
 
         for intento in range(3):
-            element = WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located(locator)
-            )
-            logger.debug(f"[fisc_page] Elemento encontrado, haciendo click... (intento {intento + 1})")
-            self.driver.execute_script("arguments[0].click();", element)
+            try:
+                element = WebDriverWait(self.driver, 20).until(
+                    EC.presence_of_element_located(locator)
+                )
+                logger.debug(f"[fisc_page] Elemento encontrado, haciendo click... (intento {intento + 1})")
+                self.driver.execute_script("arguments[0].click();", element)
 
-            if self._hubo_cambio(timeout=5):
-                logger.debug("[fisc_page] Click registrado, esperando loader...")
-                self.wait_loader()
-                logger.debug("[fisc_page] Loader terminado")
-                return
+                if self._hubo_cambio(timeout=5):
+                    logger.debug("[fisc_page] Click registrado, esperando loader...")
+                    self.wait_loader()
+                    logger.debug("[fisc_page] Loader terminado")
+                    return
 
-            logger.debug("[fisc_page] No hubo cambio, reintentando...")
-            time.sleep(2)
+                logger.debug("[fisc_page] No hubo cambio, reintentando...")
+                time.sleep(2)
+
+            except StaleElementReferenceException:
+                logger.debug(f"[fisc_page] Elemento obsoleto, reintentando... (intento {intento + 1})")
+                time.sleep(1)
 
         raise Exception(f"No se pudo cargar el reporte {nombre_reporte} tras 3 intentos")
 
