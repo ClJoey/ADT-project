@@ -10,8 +10,9 @@ from utils.helpers import limpiar_descargas
 from utils.auditoria import auditar_excel_final
 from utils.screenshots import guardar_captura
 from utils.report_html import generar_html
-from utils.pdf_converter import pdf_pagina1_a_imagen
+from utils.pdf_converter import pdf_pagina1_a_imagen, pdf_primer_empleado_a_imagen
 from utils.logger import get_logger
+import shutil
 import time
 import os
 
@@ -101,9 +102,13 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
         return "OK", ["Sin datos para mostrar"], captura
 
     limpiar_descargas(download_path)
+    screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
+    pdf_guardado = None
     try:
         pdf_path = fisc.descargar_pdf(download_path)
-        screenshots_dir = os.path.join("screenshots", empresa["nombre"].replace(" ", "_"))
+        os.makedirs(screenshots_dir, exist_ok=True)
+        pdf_guardado = os.path.join(screenshots_dir, f"{reporte}_source.pdf")
+        shutil.copy2(pdf_path, pdf_guardado)
         captura_pdf = pdf_pagina1_a_imagen(pdf_path, screenshots_dir, f"{reporte}_pdf")
         if captura_pdf:
             captura = captura_pdf
@@ -124,6 +129,16 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
 
         if ok:
             logger.info("Auditoría OK")
+            if pdf_guardado and os.path.exists(pdf_guardado):
+                try:
+                    captura_full = pdf_primer_empleado_a_imagen(
+                        pdf_guardado, screenshots_dir, f"{reporte}_pdf"
+                    )
+                    if captura_full:
+                        captura = captura_full
+                        logger.info(f"Imagen multi-página generada: {captura_full}")
+                except Exception as e_img:
+                    logger.warning(f"No se pudo generar imagen multi-página: {e_img}")
         else:
             logger.error(f"Auditoría FALLÓ: {errores}")
             raise ReporteError(f"Auditoría fallida: {errores}", errores_lista=errores)
