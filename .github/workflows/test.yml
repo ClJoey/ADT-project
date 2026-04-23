@@ -7,7 +7,7 @@ on:
     branches: [ "ci-cd-tests" ]
   workflow_dispatch:
   schedule:
-    - cron: '0 10 * * *'  # 07:00 Chile (CLST UTC-3)
+    - cron: '0 16 * * *'  # 12:00 Chile (CLT UTC-4)
 
 jobs:
   test:
