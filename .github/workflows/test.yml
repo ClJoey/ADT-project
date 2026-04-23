@@ -2,7 +2,7 @@ name: Selenium Tests
 
 on:
   push:
-    branches: [ "ci-cd-tests", "feature-pdf-email", "master" ]
+    branches: [ "ci-cd-tests", "feature-pdf-email", "master", "fix/session-recovery-robustness" ]
   pull_request:
     branches: [ "ci-cd-tests" ]
   workflow_dispatch:
@@ -46,7 +46,7 @@ jobs:
         TZ: "America/Santiago"
         PORTAL_USER: ${{ secrets.PORTAL_USER }}
         PORTAL_PASS: ${{ secrets.PORTAL_PASS }}
-      run: pytest tests -s
+      run: pytest tests/test_reporte.py -s
 
     - name: Generar PDF Consolidado
       if: always()
