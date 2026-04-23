@@ -264,22 +264,31 @@ def test_reporte(driver, empresa):
             except ConexionError as e:
                 error_msg = str(e)
                 captura = getattr(e, 'captura', None)
-                logger.error(f"{nombre_formal}: {error_msg}")
-                estado = "FAIL"
-                errores_lista = [error_msg]
-                errores_empresa.append(f"{nombre_formal}: {error_msg}")
-                logger.warning("Restaurando sesión: volviendo al selector de empresas...")
-                try:
-                    driver.execute_script('window.stop();')
-                    driver.get("https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login")
-                    time.sleep(3)
-                    init.seleccionar_empresa_por_rut(empresa["rut"])
-                    init.fisc_init()
-                    init.confirm()
-                    time.sleep(3)
-                except Exception as e_rec:
-                    logger.error(f"Restauración de sesión fallida: {e_rec}")
-                break
+                logger.error(f"{nombre_formal} (intento {intento + 1}/2): {error_msg}")
+
+                if intento == 0:
+                    logger.warning("Recuperando tras ConnectionString: volviendo al selector de empresas...")
+                    try:
+                        driver.execute_script('window.stop();')
+                        driver.get("https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login")
+                        time.sleep(3)
+                        init.seleccionar_empresa_por_rut(empresa["rut"])
+                        init.fisc_init()
+                        init.confirm()
+                        time.sleep(3)
+                        logger.info(f"Segundo intento para: {nombre_formal}")
+                    except Exception as e_rec:
+                        logger.error(f"Restauración de sesión fallida: {e_rec}")
+                        estado = "FAIL"
+                        errores_lista = [error_msg]
+                        errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                        break
+                else:
+                    logger.error(f"Segundo intento fallido para {nombre_formal} (ConnectionString)")
+                    estado = "FAIL"
+                    errores_lista = [error_msg]
+                    errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                    break
 
             except Exception as e:
                 error_msg = str(e)
