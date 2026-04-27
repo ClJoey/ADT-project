@@ -83,6 +83,27 @@ def _generar_html_resumen(summary_data):
       {rows}
     </tbody>
   </table>
+
+  <div style="margin-top:28px;padding:18px 20px;background:white;border-radius:6px;
+              box-shadow:0 2px 8px rgba(0,0,0,0.08);font-size:12px;color:#333;">
+    <p style="margin:0 0 10px;font-weight:bold;font-size:13px;color:#1a1a2e;">Glosario de estados</p>
+    <table style="border-collapse:collapse;width:100%;box-shadow:none;">
+      <tr><td style="padding:4px 10px;font-weight:bold;width:110px;">OK</td>
+          <td style="padding:4px 10px;">Reporte generado y auditado correctamente.</td></tr>
+      <tr style="background:#f8f9fa;"><td style="padding:4px 10px;font-weight:bold;">SIN DATOS</td>
+          <td style="padding:4px 10px;">No hay trabajadores registrados para este período (empresa sin personal activo).</td></tr>
+      <tr><td style="padding:4px 10px;font-weight:bold;">AUDITORIA</td>
+          <td style="padding:4px 10px;">Se detectaron inconsistencias en el reporte de Jornada Diaria (horas o balances incorrectos).</td></tr>
+      <tr style="background:#f8f9fa;"><td style="padding:4px 10px;font-weight:bold;">BDATOS</td>
+          <td style="padding:4px 10px;">Error de conexión con la base de datos del portal durante la generación del reporte.</td></tr>
+      <tr><td style="padding:4px 10px;font-weight:bold;">SERVIDOR</td>
+          <td style="padding:4px 10px;">El servidor no respondió o la sesión expiró. El reporte no pudo ser procesado.</td></tr>
+      <tr style="background:#f8f9fa;"><td style="padding:4px 10px;font-weight:bold;">TIEMPO</td>
+          <td style="padding:4px 10px;">El reporte no cargó dentro del tiempo máximo de espera (timeout).</td></tr>
+      <tr><td style="padding:4px 10px;font-weight:bold;">R. VACÍO</td>
+          <td style="padding:4px 10px;">El Reporte Diario se generó correctamente pero no contiene datos para el período consultado.</td></tr>
+    </table>
+  </div>
 </body>
 </html>"""
 

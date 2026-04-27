@@ -43,6 +43,41 @@ EMPRESAS = [
         "Cargo": None,
 	"file_name": "SIGDO_KOOPERS",
 	"nom_informe": "INGENIERIA Y CONSTRUCCION SIGDO KOPPERS S A"
-    }
+    },
+    {
+        "rut": "99598300-1",
+        "nombre": "SIGDO KOPPERS S.A. (SOCIEDADES DE INVERSION Y RENTISTAS DE CAPITALES MOBILIARIOS EN GENERAL)",
+        "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
+        "filtro_cargo":False,
+        "Cargo": None,
+	"file_name": "SIGDO_KOOPERS_SA",
+	"nom_informe": "SOCIEDADES DE INVERSION Y RENTISTAS DE CAPITALES MOBILIARIOS EN GENERAL"
+    },
+    {
+        "rut": "78167971-2",
+        "nombre": "SIO RRHH (Outsourcing Integrales de Servicios S.A.)",
+        "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
+        "filtro_cargo":False,
+        "Cargo": None,
+	"file_name": "SIO_RRHH",
+	"nom_informe": "Outsourcing Integrales de Servicios S.A."
+    },
+    {
+        "rut": "76788120-7",
+        "nombre": "SK CAPACITACION (SK CAPACITACION S.A.)",
+        "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
+        "filtro_cargo":False,
+        "Cargo": None,
+	"file_name": "SK_CAPACITACION",
+	"nom_informe": "SK CAPACITACION S.A."
+    },
+    {
+        "rut": "76662490-1",
+        "nombre": "SK INDUSTRIAL (SK INDUSTRIAL S.A.)",
+        "reportes": ["asistencia", "jor_diaria", "domingos", "modificaciones", "diario", "incidentes"],
+        "filtro_cargo":False,
+        "Cargo": None,
+	"file_name": "SK_INDUSTRIAL",
+	"nom_informe": "SK INDUSTRIAL S.A."
+    },
 ]
-

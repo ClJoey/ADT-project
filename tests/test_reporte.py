@@ -42,6 +42,11 @@ class ConexionError(ReporteError):
     pass
 
 
+class DiarioVacioError(Exception):
+    """Reporte Diario generado pero sin datos en la tabla — FAIL inmediato."""
+    pass
+
+
 def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_formal):
     """
     Ejecuta el flujo completo de un reporte en un único intento.
@@ -95,6 +100,9 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_estado")
 
     if fisc.hay_tabla_vacia():
+        if reporte == "diario":
+            logger.error(f"Reporte Diario generado sin datos en {nombre_formal}")
+            raise DiarioVacioError("Reporte Diario generado pero sin datos")
         logger.info(f"Sin datos para mostrar en {nombre_formal}")
         return "OK", ["Sin datos para mostrar"], captura
 
@@ -340,6 +348,15 @@ def test_reporte(driver, empresa):
                     tipo_fallo = "bdatos"
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     break
+
+            except DiarioVacioError as e:
+                error_msg = str(e)
+                estado = "FAIL"
+                errores_lista = [error_msg]
+                tipo_fallo = "vacio"
+                errores_empresa.append(f"{nombre_formal}: {error_msg}")
+                captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_vacio")
+                break
 
             except Exception as e:
                 error_msg = str(e)

@@ -26,6 +26,8 @@ def _etiqueta_celda(estado, errores, tipo_fallo=None):
         return "BDATOS", "#dc3545"
     if tipo_fallo == "servidor":
         return "SERVIDOR", "#dc3545"
+    if tipo_fallo == "vacio":
+        return "R. VACÍO", "#dc3545"
     return "TIEMPO", "#dc3545"
 
 
