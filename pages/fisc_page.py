@@ -40,7 +40,7 @@ class FiscPage(BasePage):
         "//div[contains(@class,'dx-toast-message') and "
         "(contains(text(),'No hay trabajadores') or contains(text(),'ConnectionString'))]"
     )
-    TABLA_VACIA       = (By.XPATH, "//td[contains(@class,'dxdvEmptyData') and contains(.,'Sin datos para mostrar')]")
+    TABLA_VACIA       = (By.XPATH, "//td[contains(@class,'dxdvEmptyData')]")
 
     # 1. Seleccionar reporte dinámico
     def seleccionar_reporte(self, nombre_reporte):
@@ -69,13 +69,6 @@ class FiscPage(BasePage):
                 time.sleep(1)
 
         raise Exception(f"No se pudo cargar el reporte {nombre_reporte} tras 3 intentos")
-
-    def click_reporte(self, nombre_reporte):
-        locator = self.REPORTES[nombre_reporte]
-        element = WebDriverWait(self.driver, 20).until(
-            EC.presence_of_element_located(locator)
-        )
-        self.driver.execute_script("arguments[0].click();", element)
 
     def _hubo_cambio(self, timeout=5):
         try:
