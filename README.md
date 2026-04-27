@@ -72,7 +72,7 @@ ADT_TEST/
 ├── tests/
 │   ├── test_login.py    # Validación del login (credenciales válidas e inválidas)
 │   ├── test_init.py     # Selección y cambio de empresa
-│   └── test_reporte.py  # Flujo principal: genera reportes para las 14 empresas
+│   └── test_reporte.py  # Flujo principal: genera reportes para las 13 empresas
 ├── utils/
 │   ├── auditoria.py     # Valida el Excel de Jornada Diaria
 │   ├── enviar_correo.py # Envío del ZIP por email (Gmail SMTP)
@@ -137,7 +137,7 @@ python utils/enviar_correo.py
 
 ## CI/CD (GitHub Actions)
 
-El workflow `.github/workflows/test.yml` se activa en push a `master` y `feature/mejoras`, y manualmente desde GitHub (workflow_dispatch) para el cron externo.
+El workflow `.github/workflows/test.yml` se activa en push a `master` y manualmente desde GitHub (workflow_dispatch) para el cron externo.
 
 El pipeline:
 1. Instala Chrome, wkhtmltopdf y Poppler en Ubuntu
