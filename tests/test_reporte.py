@@ -12,6 +12,7 @@ from utils.screenshots import guardar_captura
 from utils.report_html import generar_html
 from utils.pdf_converter import pdf_pagina1_a_imagen, pdf_primer_empleado_a_imagen, pdf_empleado_error_a_imagen, pdf_todas_paginas_a_imagen
 from utils.logger import get_logger
+import re
 import shutil
 import time
 import os
@@ -149,10 +150,9 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
             logger.error(f"Auditoría FALLÓ: {errores}")
             captura_error = None
             if pdf_guardado and os.path.exists(pdf_guardado):
-                import re as _re
                 nombres = list(dict.fromkeys(
                     m.group(1) for e in errores
-                    if (m := _re.search(r'\(([^)]+)\)', e))
+                    if (m := re.search(r'\(([^)]+)\)', e))
                 ))
                 for nombre in nombres:
                     try:
