@@ -10,7 +10,7 @@ from utils.helpers import limpiar_descargas
 from utils.auditoria import auditar_excel_final
 from utils.screenshots import guardar_captura
 from utils.report_html import generar_html
-from utils.pdf_converter import pdf_pagina1_a_imagen, pdf_primer_empleado_a_imagen, pdf_empleado_error_a_imagen
+from utils.pdf_converter import pdf_pagina1_a_imagen, pdf_primer_empleado_a_imagen, pdf_empleado_error_a_imagen, pdf_todas_paginas_a_imagen
 from utils.logger import get_logger
 import shutil
 import time
@@ -113,6 +113,15 @@ def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_form
     except Exception as e_pdf:
         logger.warning(f"No se pudo obtener imagen del PDF: {e_pdf}")
 
+    if reporte == "diario" and pdf_guardado and os.path.exists(pdf_guardado):
+        try:
+            captura_full = pdf_todas_paginas_a_imagen(pdf_guardado, screenshots_dir, f"{reporte}_pdf")
+            if captura_full:
+                captura = captura_full
+                logger.info(f"Imagen completa del reporte diario generada: {captura_full}")
+        except Exception as e_img:
+            logger.warning(f"No se pudo generar imagen completa del diario: {e_img}")
+
     if reporte == "jor_diaria":
         limpiar_descargas(download_path)
         archivo = fisc.descargar_excel(download_path)
@@ -212,7 +221,8 @@ def test_reporte(driver, empresa):
                         "nombre": nombre_formal_k,
                         "estado": "FAIL",
                         "errores": [error_msg],
-                        "captura": captura_login
+                        "captura": captura_login,
+                        "tipo_fallo": "servidor",
                     })
                 ruta_html = generar_html(resultados_empresa)
                 logger.info(f"Reporte HTML generado: {ruta_html}")
@@ -223,6 +233,7 @@ def test_reporte(driver, empresa):
         estado = "OK"
         errores_lista = []
         captura = None
+        tipo_fallo = None
 
         logger.info(f">>> Iniciando reporte: {nombre_formal}")
 
@@ -256,12 +267,14 @@ def test_reporte(driver, empresa):
                         logger.error(f"Recovery de sesión fallido: {e_rec}")
                         estado = "FAIL"
                         errores_lista = [error_msg]
+                        tipo_fallo = "servidor"
                         errores_empresa.append(f"{nombre_formal}: {error_msg}")
                         break
                 else:
                     logger.error(f"Todos los intentos de sesión fallaron para {nombre_formal}")
                     estado = "FAIL"
                     errores_lista = [error_msg]
+                    tipo_fallo = "servidor"
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
 
@@ -285,12 +298,14 @@ def test_reporte(driver, empresa):
                         logger.error(f"Recovery fallido: {e_rec}")
                         estado = "FAIL"
                         errores_lista = [error_msg]
+                        tipo_fallo = "tiempo"
                         errores_empresa.append(f"{nombre_formal}: {error_msg}")
                         break
                 else:
                     logger.error(f"Segundo intento fallido para {nombre_formal}")
                     estado = "FAIL"
                     errores_lista = [error_msg]
+                    tipo_fallo = "tiempo"
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     captura = guardar_captura(driver, empresa["nombre"], f"{reporte}_error_final")
                     break
@@ -315,18 +330,21 @@ def test_reporte(driver, empresa):
                         logger.error(f"Restauración de sesión fallida: {e_rec}")
                         estado = "FAIL"
                         errores_lista = [error_msg]
+                        tipo_fallo = "bdatos"
                         errores_empresa.append(f"{nombre_formal}: {error_msg}")
                         break
                 else:
                     logger.error(f"Segundo intento fallido para {nombre_formal} (ConnectionString)")
                     estado = "FAIL"
                     errores_lista = [error_msg]
+                    tipo_fallo = "bdatos"
                     errores_empresa.append(f"{nombre_formal}: {error_msg}")
                     break
 
             except Exception as e:
                 error_msg = str(e)
                 errores_lista = getattr(e, 'errores_lista', [error_msg])
+                tipo_fallo = "auditoria" if hasattr(e, 'errores_lista') else "servidor"
                 logger.error(f"{nombre_formal}: {error_msg}")
                 estado = "FAIL"
                 errores_empresa.append(f"{nombre_formal}: {error_msg}")
@@ -337,7 +355,8 @@ def test_reporte(driver, empresa):
             "nombre": nombre_formal,
             "estado": estado,
             "errores": errores_lista,
-            "captura": captura
+            "captura": captura,
+            "tipo_fallo": tipo_fallo,
         })
 
     ruta_html = generar_html(resultados_empresa)

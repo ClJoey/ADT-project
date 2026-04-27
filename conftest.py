@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+@pytest.fixture(scope="session", autouse=True)
+def limpiar_resumen_previo():
+    summary_path = os.path.join("reports", "summary_data.json")
+    if os.path.exists(summary_path):
+        os.remove(summary_path)
+
 @pytest.fixture(scope="function")
 def driver():
     # 1. Configuración de rutas

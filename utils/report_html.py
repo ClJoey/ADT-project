@@ -1,6 +1,63 @@
 import os
+import json
 import base64
 from datetime import datetime
+
+_FORMAL_TO_KEY = {
+    "Reporte de Asistencia": "asistencia",
+    "Reporte de Jornada Diaria": "jor_diaria",
+    "Reporte de días domingo y/o días festivos": "domingos",
+    "Reporte de modificaciones y/o alteraciones de turnos": "modificaciones",
+    "Reporte Diario": "diario",
+    "Reporte de Incidentes Técnicos": "incidentes",
+}
+
+SUMMARY_JSON = os.path.join("reports", "summary_data.json")
+
+
+def _etiqueta_celda(estado, errores, tipo_fallo=None):
+    if estado == "OK":
+        return "OK", "#28a745"
+    if estado == "NO_DATA":
+        return "SIN DATOS", "#ffc107"
+    if tipo_fallo == "auditoria":
+        return "AUDITORIA", "#dc3545"
+    if tipo_fallo == "bdatos":
+        return "BDATOS", "#dc3545"
+    if tipo_fallo == "servidor":
+        return "SERVIDOR", "#dc3545"
+    return "TIEMPO", "#dc3545"
+
+
+def _registrar_en_resumen(resultados_empresa):
+    datos = []
+    if os.path.exists(SUMMARY_JSON):
+        try:
+            with open(SUMMARY_JSON, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+        except Exception:
+            datos = []
+
+    entry = {
+        "empresa": resultados_empresa["empresa"],
+        "rut": resultados_empresa["rut"],
+        "reportes": {},
+    }
+    for r in resultados_empresa["reportes"]:
+        key = _FORMAL_TO_KEY.get(r["nombre"], r["nombre"])
+        etiqueta, color = _etiqueta_celda(r["estado"], r.get("errores", []), r.get("tipo_fallo"))
+        entry["reportes"][key] = {"etiqueta": etiqueta, "color": color}
+
+    for i, d in enumerate(datos):
+        if d["empresa"] == entry["empresa"]:
+            datos[i] = entry
+            break
+    else:
+        datos.append(entry)
+
+    os.makedirs("reports", exist_ok=True)
+    with open(SUMMARY_JSON, "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=2)
 
 # Función para convertir la imagen a texto (Base64) - Mantenemos tu lógica
 def imagen_a_base64(ruta_imagen):
@@ -195,5 +252,7 @@ def generar_html(resultados_empresa):
 
     with open(ruta, "w", encoding="utf-8") as f:
         f.write(html)
+
+    _registrar_en_resumen(resultados_empresa)
 
     return ruta
