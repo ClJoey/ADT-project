@@ -240,6 +240,16 @@ class FiscPage(BasePage):
         except:
             return False
 
+    def esta_en_fisc_page(self, timeout=15):
+        """Verifica que el menú lateral de reportes esté visible — confirma acceso exitoso."""
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(self.LIST_DT)
+            )
+            return True
+        except:
+            return False
+
     def pantalla_en_blanco(self, timeout=3):
         """
         Detecta si el formulario del reporte no cargó (pantalla en blanco).
