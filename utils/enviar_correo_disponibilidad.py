@@ -1,5 +1,8 @@
-import smtplib
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import smtplib
 import json
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,9 +20,6 @@ PDF_FILE = os.path.join("reports", "disponibilidad_informe.pdf")
 
 DESTINATARIOS = [
     "joseph.cervantes@iplusd.cl",
-    "nicolas.perez@baplicada.cl",
-    "nicolas.santana@baplicada.cl",
-    "cristian.zamora@baplicada.cl",
 ]
 
 HTML_TEMPLATE = """\
@@ -56,6 +56,21 @@ HTML_TEMPLATE = """\
                 </p>
               </td></tr>
             </table>
+
+            <p style="margin:0 0 10px;color:#333;font-size:14px;font-weight:bold;">Resumen por empresa:</p>
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="border-collapse:collapse;font-size:13px;margin-bottom:24px;">
+              <thead>
+                <tr style="background:#f0f0f0;">
+                  <th style="padding:9px 12px;text-align:left;border-bottom:2px solid #ddd;color:#333;">Empresa</th>
+                  <th style="padding:9px 12px;text-align:center;border-bottom:2px solid #ddd;color:#333;">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filas_resumen}
+              </tbody>
+            </table>
+
             <p style="margin:0 0 8px;color:#555;font-size:13px;">
               Se adjunta el informe PDF con el detalle completo y capturas de pantalla de cada empresa.
               Por favor revisar y atender los casos de sistemas caídos.
@@ -115,13 +130,28 @@ def enviar_alerta_disponibilidad():
     year = datetime.now().year
     n_ok = len(resultados) - len(fallos)
 
+    filas_resumen = ""
+    for i, r in enumerate(resultados):
+        bg = "#fafafa" if i % 2 else "#ffffff"
+        es_fail = r.get("estado") == "FAIL"
+        badge_color = "#dc3545" if es_fail else "#28a745"
+        badge_texto = "FAIL" if es_fail else "OK"
+        filas_resumen += f"""
+        <tr style="background:{bg};">
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#333;">{r['empresa']}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">
+            <span style="background:{badge_color};color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:bold;">{badge_texto}</span>
+          </td>
+        </tr>"""
+
     msg = MIMEMultipart("related")
     msg["Subject"] = f"ALERTA Disponibilidad DT — {len(fallos)} empresa(s) sin acceso — {datetime.now().strftime('%d/%m/%Y')}"
     msg["From"] = remitente
     msg["To"] = ", ".join(DESTINATARIOS)
 
     html_body = HTML_TEMPLATE.format(
-        fecha=fecha, year=year, n_fallos=len(fallos), n_ok=n_ok
+        fecha=fecha, year=year, n_fallos=len(fallos), n_ok=n_ok,
+        filas_resumen=filas_resumen,
     )
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 

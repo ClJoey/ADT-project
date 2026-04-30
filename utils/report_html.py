@@ -77,8 +77,9 @@ def generar_html(resultados_empresa):
     reportes = resultados_empresa["reportes"]
 
     total = len(reportes)
-    ok_count = sum(1 for r in reportes if r["estado"] == "OK")
-    fail_count = total - ok_count
+    ok_count      = sum(1 for r in reportes if r["estado"] == "OK")
+    warning_count = sum(1 for r in reportes if r["estado"] == "NO_DATA")
+    fail_count    = sum(1 for r in reportes if r["estado"] == "FAIL")
 
     filas_resumen = ""
     for i, r in enumerate(reportes):
@@ -191,9 +192,10 @@ def generar_html(resultados_empresa):
             }}
             .summary-boxes {{ display: flex; gap: 15px; margin-top: 15px; }}
             .box {{ padding: 8px 18px; border-radius: 6px; font-weight: bold; font-size: 14px; }}
-            .ok {{ background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
-            .fail {{ background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
-            .total {{ background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }}
+            .ok      {{ background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+            .warning {{ background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }}
+            .fail    {{ background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
+            .total   {{ background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }}
 
             .card {{
                 background: white;
@@ -236,7 +238,8 @@ def generar_html(resultados_empresa):
                 <div class="summary-boxes">
                     <div class="box total">Evaluados: {total}</div>
                     <div class="box ok">OK: {ok_count}</div>
-                    <div class="box fail">Fallidos: {fail_count}</div>
+                    <div class="box warning">WARNING: {warning_count}</div>
+                    <div class="box fail">FAIL: {fail_count}</div>
                 </div>
             </div>
 

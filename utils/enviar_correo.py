@@ -1,5 +1,8 @@
-import smtplib
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import smtplib
 import json
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -163,7 +166,6 @@ HTML_TEMPLATE = """\
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -247,7 +249,6 @@ def enviar_reporte():
             logger.error("Tip: Asegúrate de que EMAIL_PASS sea la clave de 16 letras de Google, no tu clave normal.")
     else:
         logger.error("No se encontró el archivo ZIP.")
-
 
 if __name__ == "__main__":
     enviar_reporte()
