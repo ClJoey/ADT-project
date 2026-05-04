@@ -6,7 +6,7 @@ from pages.base_page import BasePage
 URL = "https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login"
 
 TOAST_USUARIO_INVALIDO = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'El usuario indicado no es valido')]")
-TOAST_PASSWORD_INVALIDA = (By.XPATH, "//div[contains(@class,'dx-toast-message') and contains(text(),'Contraseña invalida')]")
+TOAST_PASSWORD_INVALIDA = (By.XPATH, "//div[contains(@class,'dx-toast-message') and (contains(text(),'Usuario o contraseña') or contains(text(),'Contraseña invalida') or contains(text(),'contraseña invalida'))]")
 
 
 class LoginPage(BasePage):
@@ -48,6 +48,23 @@ class LoginPage(BasePage):
         try:
             WebDriverWait(self.driver, timeout).until(
                 EC.visibility_of_element_located(TOAST_PASSWORD_INVALIDA)
+            )
+            return True
+        except:
+            return False
+
+    def is_any_credential_error_displayed(self, timeout=8):
+        """Detecta cualquier toast de credencial inválida (usuario o contraseña) en una sola espera."""
+        locator = (By.XPATH,
+            "//div[contains(@class,'dx-toast-message') and ("
+            "contains(text(),'Usuario o contraseña') or "
+            "contains(text(),'Contraseña invalida') or "
+            "contains(text(),'contraseña invalida') or "
+            "contains(text(),'El usuario indicado no es valido'))]"
+        )
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.visibility_of_element_located(locator)
             )
             return True
         except:

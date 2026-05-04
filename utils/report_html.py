@@ -28,6 +28,8 @@ def _etiqueta_celda(estado, errores, tipo_fallo=None):
         return "SERVIDOR", "#dc3545"
     if tipo_fallo == "vacio":
         return "R. VACÍO", "#dc3545"
+    if tipo_fallo == "credenciales":
+        return "CREDENCIAL", "#dc3545"
     return "TIEMPO", "#dc3545"
 
 

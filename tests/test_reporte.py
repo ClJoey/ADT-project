@@ -48,6 +48,13 @@ class DiarioVacioError(Exception):
     pass
 
 
+class CredentialError(Exception):
+    """Credenciales incorrectas detectadas por toast del portal — FAIL inmediato, sin retry."""
+    def __init__(self, message, captura=None):
+        super().__init__(message)
+        self.captura = captura
+
+
 def _intentar_reporte(driver, fisc, empresa, reporte, download_path, nombre_formal):
     """
     Ejecuta el flujo completo de un reporte en un único intento.
@@ -208,12 +215,35 @@ def test_reporte(driver, empresa):
         try:
             login.load("https://asistenciadt.baplicada.cl/Login.aspx?FiscalizacionDT=Login")
             login.login(USER[0]["usuario"], USER[0]["password"])
+
+            if login.is_any_credential_error_displayed(timeout=8):
+                time.sleep(0.5)
+                captura_cred = guardar_captura(driver, empresa["nombre"], "login_credencial_error")
+                raise CredentialError("Usuario o contraseña inválida", captura=captura_cred)
+
             init.seleccionar_empresa_por_rut(empresa["rut"])
             init.fisc_init()
             init.confirm()
             fisc = FiscPage(driver)
             time.sleep(3)
             break
+        except CredentialError as e:
+            error_msg = str(e)
+            captura_login = getattr(e, 'captura', None)
+            logger.error(f"Credenciales incorrectas para {empresa['nombre']}: {error_msg}")
+            for reporte_key in empresa["reportes"]:
+                nombre_formal_k = FiscPage.REPORTE_NOMBRES_FORMALES.get(reporte_key, reporte_key)
+                resultados_empresa["reportes"].append({
+                    "nombre": nombre_formal_k,
+                    "estado": "FAIL",
+                    "errores": [error_msg],
+                    "captura": captura_login,
+                    "tipo_fallo": "credenciales",
+                })
+            ruta_html = generar_html(resultados_empresa)
+            logger.info(f"Reporte HTML generado: {ruta_html}")
+            pytest.fail(f"{empresa['nombre']} | Credenciales incorrectas")
+
         except Exception as e:
             logger.warning(f"Sesión inicial (intento {login_intento + 1}/{login_intentos_max}): {str(e)[:200]}")
             if login_intento < login_intentos_max - 1:

@@ -27,7 +27,6 @@ _COL_LABELS = {
     "incidentes":     "Incid.",
 }
 
-
 def _generar_tabla_resumen_email():
     if not os.path.exists(SUMMARY_JSON):
         return ""
@@ -105,6 +104,8 @@ def _generar_tabla_resumen_email():
       <td style="padding:4px 8px;border:1px solid #dee2e6;">El reporte no cargó dentro del tiempo máximo de espera.</td></tr>
   <tr><td style="padding:4px 8px;font-weight:bold;border:1px solid #dee2e6;">R. VACÍO</td>
       <td style="padding:4px 8px;border:1px solid #dee2e6;">El Reporte Diario se generó pero no contiene datos para el período consultado.</td></tr>
+  <tr style="background:#f8f9fa;"><td style="padding:4px 8px;font-weight:bold;border:1px solid #dee2e6;">CREDENCIAL</td>
+      <td style="padding:4px 8px;border:1px solid #dee2e6;">Las credenciales configuradas son incorrectas (usuario o contraseña inválida).</td></tr>
 </table>"""
 
 HTML_TEMPLATE = """\
