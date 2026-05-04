@@ -4,7 +4,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import smtplib
 import json
-from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -14,8 +13,6 @@ from datetime import datetime
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-load_dotenv()
 
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo_BA.jpg")
 SUMMARY_JSON = os.path.join("reports", "summary_data.json")
@@ -184,6 +181,9 @@ def enviar_reporte():
     password = os.getenv("EMAIL_PASS")
     destinatarios = [
         "joseph.cervantes@iplusd.cl",
+        "nicolas.perez@baplicada.cl",
+        "nicolas.santana@baplicada.cl",
+        "cristian.zamora@baplicada.cl"
     ]
 
     if not remitente or not password:

@@ -22,7 +22,10 @@ RESULTS_FILE = os.path.join("reports", "disponibilidad_results.json")
 PDF_FILE = os.path.join("reports", "disponibilidad_informe.pdf")
 
 DESTINATARIOS = [
-    "joseph.cervantes@iplusd.cl",
+        "joseph.cervantes@iplusd.cl",
+        "nicolas.perez@baplicada.cl",
+        "nicolas.santana@baplicada.cl",
+        "cristian.zamora@baplicada.cl"
 ]
 
 HTML_TEMPLATE = """\

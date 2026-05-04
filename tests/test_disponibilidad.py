@@ -69,6 +69,15 @@ def test_disponibilidad(driver_factory, empresa):
                 raise Exception(f"Error de red al cargar el portal: {error_red}")
             logger.debug(f"[Test] Haciendo login...")
             login.login(USER[0]["usuario"], USER[0]["password"])
+
+            if login.is_any_credential_error_displayed(timeout=8):
+                time.sleep(0.5)
+                resultado["estado"] = "FAIL"
+                resultado["error"] = "Usuario o contraseña inválida"
+                resultado["captura"] = guardar_captura(driver, empresa["nombre"], "login_credencial_error")
+                logger.error(f"FAIL (credenciales): {empresa['nombre']}")
+                break
+
             logger.debug(f"[Test] Login OK. Seleccionando empresa: {empresa['nombre']} (RUT: {empresa['rut']})")
             init.seleccionar_empresa_por_rut(empresa["rut"])
             logger.debug(f"[Test] Empresa seleccionada. Iniciando fiscalización...")
