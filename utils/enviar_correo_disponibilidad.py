@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import smtplib
 import json
+from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -13,6 +14,8 @@ from datetime import datetime
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+load_dotenv()
 
 LOGO_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "logo_BA.jpg")
 RESULTS_FILE = os.path.join("reports", "disponibilidad_results.json")
