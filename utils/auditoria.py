@@ -1,6 +1,9 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pandas as pd
 import re
-import os
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

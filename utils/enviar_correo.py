@@ -1,5 +1,8 @@
-import smtplib
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import smtplib
 import json
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -23,7 +26,6 @@ _COL_LABELS = {
     "diario":         "Diario",
     "incidentes":     "Incid.",
 }
-
 
 def _generar_tabla_resumen_email():
     if not os.path.exists(SUMMARY_JSON):
@@ -102,6 +104,8 @@ def _generar_tabla_resumen_email():
       <td style="padding:4px 8px;border:1px solid #dee2e6;">El reporte no cargó dentro del tiempo máximo de espera.</td></tr>
   <tr><td style="padding:4px 8px;font-weight:bold;border:1px solid #dee2e6;">R. VACÍO</td>
       <td style="padding:4px 8px;border:1px solid #dee2e6;">El Reporte Diario se generó pero no contiene datos para el período consultado.</td></tr>
+  <tr style="background:#f8f9fa;"><td style="padding:4px 8px;font-weight:bold;border:1px solid #dee2e6;">CREDENCIAL</td>
+      <td style="padding:4px 8px;border:1px solid #dee2e6;">Las credenciales configuradas son incorrectas (usuario o contraseña inválida).</td></tr>
 </table>"""
 
 HTML_TEMPLATE = """\
@@ -163,7 +167,6 @@ HTML_TEMPLATE = """\
               </p>
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
@@ -178,9 +181,6 @@ def enviar_reporte():
     password = os.getenv("EMAIL_PASS")
     destinatarios = [
         "joseph.cervantes@iplusd.cl",
-        "nicolas.perez@baplicada.cl",
-        "nicolas.santana@baplicada.cl",
-        "cristian.zamora@baplicada.cl"
     ]
 
     if not remitente or not password:
@@ -247,7 +247,6 @@ def enviar_reporte():
             logger.error("Tip: Asegúrate de que EMAIL_PASS sea la clave de 16 letras de Google, no tu clave normal.")
     else:
         logger.error("No se encontró el archivo ZIP.")
-
 
 if __name__ == "__main__":
     enviar_reporte()

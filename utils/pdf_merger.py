@@ -1,5 +1,8 @@
-import pdfkit
+import sys
 import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import pdfkit
 import json
 import platform
 from datetime import datetime
@@ -102,6 +105,8 @@ def _generar_html_resumen(summary_data):
           <td style="padding:4px 10px;">El reporte no cargó dentro del tiempo máximo de espera (timeout).</td></tr>
       <tr><td style="padding:4px 10px;font-weight:bold;">R. VACÍO</td>
           <td style="padding:4px 10px;">El Reporte Diario se generó correctamente pero no contiene datos para el período consultado.</td></tr>
+      <tr style="background:#f8f9fa;"><td style="padding:4px 10px;font-weight:bold;">CREDENCIAL</td>
+          <td style="padding:4px 10px;">Las credenciales configuradas son incorrectas (usuario o contraseña inválida).</td></tr>
     </table>
   </div>
 </body>
